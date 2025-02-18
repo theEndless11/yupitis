@@ -2,7 +2,7 @@
 const Ably = require('ably');
 
 // Your Ably API key
-const ably = new Ably.Realtime('Sca1sw.SyR6NQ:Hjna0qoOqkun3de7zgvuViTMGl1l2XfhR6ATNkyfEik');  // Replace with your API key
+const ably = new Ably.Realtime('tpvrng.7-V-wA:ar2W4S8_YZX4IlF7XSLcjt2OYIt0ES8ACPL5kpiujq0');  // Replace with your API key
 
 // Function to publish to a specific Ably channel
 function publishToAbly(event, data) {
