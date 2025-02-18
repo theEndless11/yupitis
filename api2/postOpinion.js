@@ -3,29 +3,34 @@ import { publishToAbly } from '../utils2/ably';  // Assuming this remains the sa
 
 // Set CORS headers
 const setCorsHeaders = (req, res) => {
-    const allowedOrigins = ['https:///latestnewsandaffairs.site'];  // Add more origins if needed
+    const allowedOrigins = ['https://latestnewsandaffairs.site'];  // Corrected the allowed origin
     const origin = req.headers.origin;
 
+    // If the request origin matches one of the allowed origins, set the CORS header
     if (allowedOrigins.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
     } else {
-        res.setHeader('Access-Control-Allow-Origin', 'https://latestnewsandaffairs.site');
+        res.setHeader('Access-Control-Allow-Origin', '*');  // This allows any origin if needed
     }
 
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, OPTIONS');
+    // Allow specific HTTP methods
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    // Allow specific headers, including content-type, which is important for JSON requests
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    // Allow credentials to be sent
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Cache-Control', 'no-cache');
 };
 
 // Handle post actions (creating, liking, disliking)
 export default async function handler(req, res) {
+    // Handle pre-flight OPTIONS request
     if (req.method === 'OPTIONS') {
         setCorsHeaders(req, res);
-        return res.status(200).end();
+        return res.status(200).end();  // Respond with 200 OK for OPTIONS pre-flight
     }
 
-    setCorsHeaders(req, res);
+    setCorsHeaders(req, res);  // Ensure CORS headers are applied to all other requests
 
     // POST: Create new post
     if (req.method === 'POST') {
@@ -150,3 +155,4 @@ export default async function handler(req, res) {
     // Handle other methods
     return res.status(405).json({ message: 'Method Not Allowed' });
 }
+
