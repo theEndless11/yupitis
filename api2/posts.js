@@ -1,4 +1,4 @@
-import { promisePool } from '../utils/db';  // Use the MySQL connection pool from db.js
+import { promisePool } from '../utils2/db';  // Use the MySQL connection pool from db.js
 
 // Set CORS headers for all methods
 const setCorsHeaders = (res) => {
