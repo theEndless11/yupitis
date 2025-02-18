@@ -1,5 +1,5 @@
-import { promisePool } from '../utils/db';  // Corrected to use MySQL connection pool
-import { publishToAbly } from '../utils/ably';  // Assuming this remains the same
+import { promisePool } from '../utils2/db';  // Corrected to use MySQL connection pool
+import { publishToAbly } from '../utils2/ably';  // Assuming this remains the same
 
 // Set CORS headers
 const setCorsHeaders = (req, res) => {
