@@ -1,0 +1,686 @@
+.post-header .profile-picture {
+    width: 30px; /* Set a small width */
+    height: 30px; /* Set a small height */
+    border-radius: 50%; /* Make the picture circular */
+    overflow: hidden; /* Ensure the image is contained in a circle */
+    margin-right: 10px; /* Add space between the picture and username */
+    display: inline-block; /* Align the profile picture with the username */
+}
+.post-card .timestamp {
+    font-size: 11px; /* Smaller font size */
+    color: #888; /* Light gray color for the timestamp */
+    margin-top: 8px; /* Adds some space between the content and the timestamp */
+    text-align: right; /* Align the timestamp to the right */
+}
+.post-header .profile-picture img {
+    width: 100%; /* Make the image cover the div */
+    height: 100%; /* Make the image cover the div */
+    object-fit: cover; /* Ensure the image maintains its aspect ratio and fills the div */
+}
+
+/* Align the profile picture and username horizontally */
+.post-header {
+    display: flex;
+    align-items: center; /* Vertically align the profile picture and username */
+    margin-bottom: 10px; /* Add some space below the post header */
+}
+ /* Style to ensure elements inside the settings are aligned in a row */
+ .username-settings,
+ .dark-mode-toggle-container {
+     display: flex;
+     align-items: center;
+     margin-bottom: 20px;  /* Adds spacing between different settings sections */
+ }
+ 
+ /* Additional margin to space out elements */
+ .username-settings p,
+ .dark-mode-toggle-container label {
+     margin-right: 10px; /* Ensure there's space between label and input */
+ }
+ 
+ /* Styling the dark mode checkbox */
+ #dark-mode-toggle {
+     width: 40px;
+     height: 20px;
+ }
+ 
+ /* Optional: Styling the dark mode toggle to make it look nicer */
+ #dark-mode-toggle:checked {
+     background-color: #4caf50; /* Change the color when checked */
+ }
+ 
+ /* Flexbox row style to align everything in a neat line */
+ .settings-section h2 {
+     font-size: 24px;
+     margin-bottom: 15px;
+ }
+ .nav-bar {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    gap: 65px; /* Space between the buttons */
+}
+
+.icon-btn {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    padding: 15px;
+    font-size: 20px;
+    cursor: pointer;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.icon-btn:hover {
+    background-color: #0056b3;
+    transform: scale(1.1);  /* Slight scale effect on hover */
+}
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* General Body Styles */
+body {
+    font-family: 'Roboto', sans-serif;
+    background: #000; /* Black background */
+    color: #e0e0e0; /* Light text color */
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    height: 100vh;
+    padding: 0; /* Remove body padding */
+    font-size: 12px;
+    overflow-x: hidden;
+}
+
+body.dark-mode {
+    background: #121212;
+    color: #fff;
+}
+
+/* Container Styles */
+.container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 0;
+    margin: 0; /* Remove container margins */
+}
+
+/* Navigation Bar */
+.nav-bar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+/* Main Content Section */
+#main-content {
+    padding: 20px;
+    width: 100%; /* Ensure full width */
+}
+
+/* Form Container Styling */
+.form-container {
+    margin-bottom: 0;
+}
+
+/* Textarea Styling */
+textarea {
+    width: 100%;
+    padding: 5px;
+    font-size: 14px;
+    border-radius: 12px;
+    border: 1px solid #ddd;
+    resize: none;
+    background: #000; /* Black background */
+    color: #e0e0e0; /* Light text color */
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #ff6f61;
+    box-shadow: 0 0 10px rgba(255, 111, 97, 0.5);
+}
+
+/* Button Styling */
+button {
+    padding: 8px 15px;
+    background-color: #ff6f61;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+button:hover {
+    background-color: #e64a3c;
+}
+
+/* Posts Feed Section */
+#posts {
+    margin-top: 20px;
+    padding: 0 0px; /* Add some internal padding to make sure posts don't touch edges */
+}
+
+/* Post Card Styling */
+.post-card {
+    font-size: 11px;
+    background-color: #000; /* Black background */
+    color: #e0e0e0; /* Light text color */
+    padding: 20px;
+    border-radius: 15px;
+    margin: 0 0 20px 0; /* Remove left and right margin, keep bottom margin */
+    width: 100%; /* Ensure the post takes the full width */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+/* Post Card Line Separator */
+.post-card:not(:last-child) {
+    border-bottom: 1px solid #ddd;
+}
+
+/* Post Card Actions */
+.post-card .actions {
+    display: flex;
+    justify-content: flex-start; /* Align to the left, won't push buttons down */
+    gap: 12px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.post-card button {
+    background-color: transparent;
+    border: 1px solid #ff6f61; /* Adding border to keep buttons visible */
+    color: #ff6f61;
+    cursor: pointer;
+    font-size: 12px; /* Smaller text size for buttons */
+    padding: 6px 10px; /* Reduced padding to keep buttons compact */
+    border-radius: 5px;
+    min-width: 60px; /* Prevent buttons from becoming too small */
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+body.dark-mode .post-card button {
+    color: #fff;
+    border-color: #fff;
+}
+
+/* Hover effect */
+.post-card button:hover {
+    color: #e64a3c;
+    background-color: #fff; /* Change background color on hover */
+}
+
+/* Ensure buttons are responsive and remain aligned on smaller screens */
+@media (max-width: 600px) {
+    .post-card .actions {
+        justify-content: flex-start; /* Prevent stacking */
+    }
+
+    .post-card button {
+        font-size: 10px; /* Smaller font size */
+        padding: 4px 8px; /* Even more compact padding */
+        min-width: 50px; /* Ensuring buttons do not shrink too much */
+    }
+}
+
+
+
+/* Footer Styling */
+footer {
+    margin-top: 25px;
+    font-size: 13px;
+    color: #888;
+    text-align: center;
+}
+
+
+/* Global Modal Styles */
+.edit-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);  /* Soft black background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    animation: fadeIn 0.4s ease-out;  /* Smooth fade-in effect */
+}
+
+/* Modal content box */
+.edit-modal-content {
+    background: linear-gradient(135deg, #f5f5f5, #e0e0e0);  /* Gradient background */
+    border-radius: 15px;
+    padding: 25px;
+    width: 350px;  /* Adjust width for a more modern look */
+    text-align: center;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);  /* Soft shadow for depth */
+    animation: slideIn 0.5s ease-out;
+}
+
+/* Modal message */
+.edit-modal-content p {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;  /* Darker text for better readability */
+    margin-bottom: 20px;
+}
+
+/* Button container */
+.modal-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 5px;  /* Reduced gap between buttons */
+}
+
+/* Modal buttons */
+.modal-actions button {
+    padding: 12px 18px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.3s ease, background-color 0.3s ease; /* Hover effects */
+}
+
+/* Cancel button */
+.modal-cancel {
+    background-color: #f44336;  /* Bright red */
+    color: white;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.modal-cancel:hover {
+    background-color: #d32f2f;  /* Darker red */
+    transform: scale(1.05);  /* Subtle zoom effect */
+}
+
+/* Confirm button */
+.modal-confirm {
+    background-color: #4CAF50;  /* Vibrant green */
+    color: white;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.modal-confirm:hover {
+    background-color: #388E3C;  /* Darker green */
+    transform: scale(1.05);  /* Subtle zoom effect */
+}
+
+/* Add fade-in animation for modal */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Add slide-in animation for content */
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+
+
+.delete-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.delete-modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    width: 300px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.delete-modal-content h3 {
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+.delete-modal-content p {
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: #555;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: space-around;
+}
+
+.modal-actions button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.modal-cancel {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.modal-confirm {
+    background-color: #ff4d4d;
+    color: white;
+}
+
+
+/* Floating Navigation (FAB Buttons) */
+.floating-nav {
+    position: fixed;
+    bottom: 89px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    z-index: 9999;
+}
+
+.fab-btn {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    padding: 12px;
+    font-size: 24px; /* Smaller icon size */
+    cursor: pointer;
+    border-radius: 50%;
+    width: 55px;
+    height: 55px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.fab-btn:hover {
+    background-color: #0056b3;
+    transform: scale(1.1);
+}
+
+/* Menu Options Styling */
+.nav-options {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.nav-options.visible {
+    display: flex;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.nav-option {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    padding: 10px;
+    font-size: 14px; /* Smaller font size */
+    cursor: pointer;
+    border-radius: 10px;
+    width: 100px;
+    text-align: center;
+    transition: background-color 0.3s ease;
+}
+
+.nav-option:hover {
+    background-color: #0056b3;
+}
+
+/* Overlay Styling */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    display: none;
+}
+
+.overlay.visible {
+    display: flex;
+}
+
+/* Content Container */
+.content-container {
+    background-color: red;
+    padding: 20px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 550px;
+    position: relative;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+/* Close Button Styling */
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #333;
+}
+
+.close-btn:hover {
+    color: #000;
+}
+
+/* Button Click Animation */
+.button-clicked {
+    transform: scale(1.1);
+}
+/* Notification Styling */
+.notification {
+    position: fixed;
+    top: 20px;
+    left: 0;
+    right: 0;
+    margin: 0 auto; /* Center horizontally */
+    width: auto; /* Make sure width adjusts to the content */
+    max-width: 400px; /* Limit max width if needed */
+    background-color: #4caf50;
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease-in-out, top 0.5s ease-in-out;
+    z-index: 1000;
+    box-sizing: border-box; /* Include padding in width calculation */
+}
+
+.notification.show-notification {
+    opacity: 1;
+    top: 30px;
+}
+
+.error-notification {
+    background-color: #f44336;
+}
+
+
+.sticky-navbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #111;
+    padding: 15px 0;
+    z-index: 1000;
+    box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.sticky-navbar ul {
+    display: flex;
+    justify-content: center;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sticky-navbar li {
+    margin: 0 25px;
+}
+
+.sticky-navbar a {
+    color: #fff;
+    font-size: 30px;
+    font-weight: 600;
+    padding: 30px 45px;
+    text-align: center;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.sticky-navbar a:hover {
+    color: #fff;
+    background-color: #ff4081;
+    transform: translateY(-5px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive Sticky Navbar for Mobile */
+@media (max-width: 768px) {
+    .sticky-navbar {
+        padding: 10px 0px;
+    }
+
+    .sticky-navbar a {
+        font-size: 22px;
+        padding: 10px;
+    }
+}
+
+/* Adding a small animation when the navbar comes into view */
+.sticky-navbar {
+    opacity: 0;
+    transform: translateY(100%);
+    animation: slideUp 0.5s forwards;
+}
+
+@keyframes slideUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Navigation Bar */
+.nav-bar {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    gap: 50px; /* Space between the buttons */
+}
+
+.icon-btn {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    padding: 15px;
+    font-size: 20px;
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.icon-btn:hover {
+    background-color: #0056b3;
+    transform: scale(1.1);  /* Slight scale effect on hover */
+}
+
+.icon-btn:focus {
+    outline: none;
+}
+
+
+.settings-section {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #000;
+    border-radius: 8px;
+}
+.profile-picture {
+    width: 30px; /* Set a small width */
+    height: 30px; /* Set a small height */
+    border-radius: 50%; /* Make the picture circular */
+    overflow: hidden; /* Ensure the image is contained in a circle */
+    margin-right: 10px; /* Add space between the picture and username */
+    display: inline-block; /* Align the profile picture with the username */
+}
+
+ .profile-picture img {
+    width: 100%; /* Make the image cover the div */
+    height: 100%; /* Make the image cover the div */
+    object-fit: cover; /* Ensure the image maintains its aspect ratio and fills the div */
+}
+

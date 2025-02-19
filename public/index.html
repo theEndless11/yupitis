@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"> <!-- Ensures compatibility with Internet Explorer -->
+    <!-- Link to External Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.ably.io/lib/ably.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+</head>
+<body>
+    <script>
+        const ably = new Ably.Realtime('jrRn0w.bxfGbA:DwW2svyt4ahbcu6ZTgEdPge_9Gx3G3DSGOo6LezEvJ4'); // Your Ably API key
+        const channel = ably.channels.get('opinions');
+        
+        // Generate a unique session ID if it doesn't exist in sessionStorage
+        if (!sessionStorage.getItem('sessionId')) {
+            sessionStorage.setItem('sessionId', generateSessionId());
+        }
+        
+        // Helper function to generate a unique session ID
+        function generateSessionId() {
+            return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        }
+        
+        // Helper function to generate a 4-word username
+        function generateUsername() {
+            const words = ["K", "7", "Q", "V", "1", "M", "2", "Z", "9", "S", "0", "X"];
+            const randomWords = [];
+            for (let i = 0; i < 4; i++) {
+                const randomIndex = Math.floor(Math.random() * words.length);
+                randomWords.push(words[randomIndex]);
+            }
+            return randomWords.join("");
+        }
+        
+        // Helper function to assign a random profile picture
+        function getRandomProfilePicture() {
+            const profilePictures = [
+                'pfp.jpg', 
+                'pfp1.jpg', 
+                'pfp2.jpg', 
+                'pfp3.jpg',
+                'pfp4.jpg',
+                'pfp5.jpg',
+                'pfp6.jpg', 
+                'nlogo.png'
+            ];
+            const randomIndex = Math.floor(Math.random() * profilePictures.length);
+            return profilePictures[randomIndex];
+        }
+        
+        // Check if username already exists in localStorage
+        let username = localStorage.getItem('username');
+        if (!username) {
+            username = generateUsername();  // If no username, generate a default one
+            localStorage.setItem('username', username);  // Save it in localStorage for persistence
+        }
+        
+        // Function to allow the user to change their username
+        function changeUsername() {
+            const newUsername = prompt("Enter a new username:", username);
+            if (newUsername && newUsername !== username) {
+                username = newUsername;
+                localStorage.setItem('username', username);  // Save the updated username in localStorage
+                showNotification(`Username updated to ${username}`, false);
+                updateUsernameDisplay();  // Update the display with the new username
+            }
+        }
+        
+        // Function to display the current username
+        function updateUsernameDisplay() {
+            const currentUsernameDisplay = document.getElementById('current-username');
+            const currentUsernameDisplaySettings = document.getElementById('current-username-settings');
+            currentUsernameDisplay.innerText = username;
+            currentUsernameDisplaySettings.innerText = username;
+        }
+        </script>
+         <script>const timestampElement = document.createElement('span');
+timestampElement.className = 'timestamp';
+timestampElement.textContent = formattedTimestamp; // Insert the formatted timestamp
+postCard.appendChild(timestampElement); // Add the timestamp to the post card
+</script>
+
+<div class="mode-toggle" onclick="toggleDarkMode()">🌙</div> <!-- Emoji Button for Dark Mode --><style>mode toggle {  position: fixed;
+    right: 20px; }</style>
+    <div id="notification" class="notification">
+  <p id="notificationMessage"></p>
+</div><script>function showNotification(message, isError = false) {
+    const notificationElement = document.getElementById('notification');
+    const messageElement = document.getElementById('notificationMessage');
+    
+    messageElement.textContent = message;
+
+    // Set the style for error or success
+    if (isError) {
+        notificationElement.classList.add('error-notification');
+    } else {
+        notificationElement.classList.remove('error-notification');
+    }
+
+    // Show the notification with animation
+    notificationElement.classList.add('show-notification');
+
+    // Hide after 3 seconds
+    setTimeout(() => {
+        notificationElement.classList.remove('show-notification');
+    }, 3000);
+}</script>
+<div class="floating-nav">
+    <!-- Floating Action Button (FAB) -->
+    <button class="fab-btn" id="fabBtn" aria-label="Open menu">+</button>
+
+    <!-- Menu items that will be shown when FAB is clicked -->
+    <div class="nav-options">
+        <button class="nav-option" id="termsBtn" aria-label="Terms and Conditions">📜 Terms</button>
+        <button class="nav-option" id="contactBtn" aria-label="Contact Information">📞 Contact</button>
+        <button class="nav-option" id="communityBtn" aria-label="Community Guidelines">📚 Guidelines</button>
+    </div>
+
+    <!-- Overlay for displaying content in the middle of the page -->
+    <div class="overlay hidden" id="overlay">
+        <div class="content-container">
+            <!-- Close button -->
+            <button class="close-btn" id="closeBtn" aria-label="Close">×</button>
+
+            <!-- Content for each section -->
+
+            <div id="termsContent" class="content">
+                <h3>Terms & Conditions</h3>
+                <p>Welcome to our platform! By using our service, you agree to the following terms and conditions:</p>
+                <ul>
+                    <li><strong>Eligibility:</strong> You must be at least 13 years old to use this platform.</li>
+                    <li><strong>Respectful Use:</strong> You agree to use this platform for lawful purposes only. Do not post or share content that violates any local, national, or international laws.</li>
+                    <li><strong>Privacy:</strong> We respect your privacy. Your personal information will not be shared with third parties unless necessary to comply with the law.</li>
+                    <li><strong>Content Ownership:</strong> You retain ownership of any content you post, but by posting, you grant us a license to use, modify, and distribute the content within the scope of the service.</li>
+                    <li><strong>Prohibited Content:</strong> Do not post any offensive, abusive, defamatory, or illegal content. Any content that promotes hate speech, violence, or harassment is strictly prohibited.</li>
+                    <li><strong>Account Termination:</strong> We reserve the right to suspend or terminate your account for violating any of the terms outlined in this agreement.</li>
+                    <li><strong>Changes to Terms:</strong> We may update these terms periodically. It is your responsibility to review them regularly. By continuing to use the platform, you agree to the updated terms.</li>
+                </ul>
+                <p>If you have any questions regarding these terms, please contact us at the provided contact information.</p>
+            </div>
+
+            <div id="contactContent" class="content hidden">
+                <h3>Contact Info</h3>
+                <p>For support, inquiries, or any questions, please feel free to reach out to us:</p>
+                <p><strong>Email:</strong> name86473@gmail.com</p>
+                <p><strong>Phone:</strong> +1 123-456-7890</p>
+                <p><strong>Address:</strong> 1234 Platform Lane, Tech City, TX 12345</p>
+                <p>If you're having technical issues or need further assistance, don't hesitate to get in touch with our support team.</p>
+            </div>
+
+            <div id="communityContent" class="content hidden">
+                <h3>Community Guidelines</h3>
+                <p>We want to foster a positive, inclusive, and respectful community on our platform. To help maintain a safe space for everyone, please adhere to the following guidelines:</p>
+                <ul>
+                    <li><strong>Respect Others:</strong> Treat all members of the community with respect. Engage in discussions with kindness and empathy.</li>
+                    <li><strong>Constructive Feedback:</strong> Share your opinions and thoughts constructively. If you disagree with someone, express your opinion in a way that encourages healthy discussion.</li>
+                    <li><strong>No Hate Speech or Bullying:</strong> Discrimination, hate speech, bullying, and harassment will not be tolerated. We aim to create an environment where everyone feels safe.</li>
+                    <li><strong>Stay on Topic:</strong> Keep your posts relevant to the purpose of the platform. Avoid spamming or irrelevant content.</li>
+                    <li><strong>Report Violations:</strong> If you encounter any content that violates these guidelines or our terms, please report it immediately. We take reports seriously and investigate them promptly.</li>
+                    <li><strong>Privacy:</strong> Respect others' privacy. Do not share personal information about other users without their consent.</li>
+                </ul>
+                <p>By following these guidelines, you help ensure that everyone has a positive experience. We thank you for your cooperation!</p>
+            </div>
+        </div>
+    </div>
+</div><script>
+    document.getElementById('fabBtn').addEventListener('click', function (event) {
+        event.stopPropagation();
+        const navOptions = document.querySelector('.nav-options');
+        navOptions.classList.toggle('visible');
+    });
+    
+    function showContent(contentId) {
+        const overlay = document.getElementById('overlay');
+        const allContent = document.querySelectorAll('.content');
+        
+        // Hide all content sections
+        allContent.forEach(content => {
+            content.classList.remove('visible');
+            content.classList.add('hidden');
+        });
+    
+        // Show the selected content
+        const contentToShow = document.getElementById(contentId);
+        if (contentToShow) {
+            contentToShow.classList.remove('hidden');
+            contentToShow.classList.add('visible');
+            overlay.classList.add('visible'); // Show the overlay
+        }
+    
+        // Close the menu options
+        const navOptions = document.querySelector('.nav-options');
+        navOptions.classList.remove('visible');
+    }
+    
+    // Event listeners for buttons to show content
+    document.getElementById('termsBtn').addEventListener('click', function () {
+        showContent('termsContent');
+    });
+    
+    document.getElementById('contactBtn').addEventListener('click', function () {
+        showContent('contactContent');
+    });
+    
+    document.getElementById('communityBtn').addEventListener('click', function () {
+        showContent('communityContent');
+    });
+    
+    // Close the overlay when the close button is clicked
+    document.getElementById('closeBtn').addEventListener('click', function () {
+        const overlay = document.getElementById('overlay');
+        overlay.classList.remove('visible');
+    });
+    
+    // Prevent hiding the overlay when clicking inside the content container
+    document.getElementById('overlay').addEventListener('click', function(event) {
+        const contentContainer = document.querySelector('.content-container');
+        if (!contentContainer.contains(event.target)) {
+            overlay.classList.remove('visible');
+        }
+    });
+    </script>
+
+    <script> // Function to toggle between light and dark mode
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const modeIcon = document.querySelector('.mode-toggle');
+        
+            // Switch emoji based on the current mode
+            if (document.body.classList.contains('dark-mode')) {
+                modeIcon.textContent = '🌞'; // Sun for light mode
+            } else {
+                modeIcon.textContent = '🌙'; // Moon for dark mode
+            }
+        
+            // Update the dark mode checkbox in settings
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+            darkModeToggle.checked = document.body.classList.contains('dark-mode');
+        }
+        
+        // On page load, check if dark mode is enabled from previous session and set accordingly
+        window.onload = function() {
+            if (localStorage.getItem('darkMode') === 'enabled') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('dark-mode-toggle').checked = true;
+            }
+        
+            const modeIcon = document.querySelector('.mode-toggle');
+            modeIcon.textContent = document.body.classList.contains('dark-mode') ? '🌞' : '🌙';
+        };
+        
+        // Remember dark mode preference
+        document.getElementById('dark-mode-toggle').addEventListener('change', function() {
+            if (this.checked) {
+                localStorage.setItem('darkMode', 'enabled');
+            } else {
+                localStorage.setItem('darkMode', 'disabled');
+            }
+        });</script>
+        
+<!-- Sticky Navbar -->
+<nav class="sticky-navbar">
+    <ul>
+        <li><a href="#section1"><i class="fas fa-home"></i></a></li>
+        <li><a href="extra.html"><i class="fas fa-comments"></i></a></li>
+         <li><a href="floatingNav.html"><i class="fas fa-globe"></i></a></li>
+        <li><a href="floatingNav.html"><i class="fas fa-ghost"></i></a></li>
+    </ul>
+</nav>
+
+<div class="container">
+    <div class="nav-bar">
+        <button id="homeBtn" class="icon-btn"><i class="fas fa-home"></i></button>
+        <button id="moviesBtn" class="icon-btn"><i class="fas fa-clapperboard"></i></button> <!-- Movie Icon -->
+        <button id="sportsBtn" class="icon-btn"><i class="fas fa-basketball-ball"></i></button> <!-- Sports Icon -->
+        <button id="settingsBtn" class="icon-btn"><i class="fas fa-cogs"></i></button>
+    </div>
+    
+    <!-- Main Content Section (for posting opinions) -->
+    <div id="main-content">
+        <h1>Share Your Opinion Anonymously</h1>
+
+        <div class="form-container">
+            <textarea id="postText" placeholder="What’s on your mind?" rows="4"></textarea>
+            <button id="submitBtn">Post Opinion</button>
+        </div>
+
+        <div id="posts" class="posts-feed">
+            <!-- Existing posts will be loaded here -->
+        </div>
+        <div id="load-more-trigger"></div>
+    </div>
+<script src="src.js"></script>
+    <!-- Movies Section (Initially hidden) -->
+    <div id="movies-section" style="display: none;">
+        <h1>Movies Section</h1>
+        <div class="form-container">
+            <textarea id="postText" placeholder="What's your opinion on movies?" rows="4"></textarea>
+            <button id="submitBtn">Post Opinion</button>
+        </div>
+        <div id="posts" class="posts-feed"></div>
+        <div id="load-more-trigger"></div>
+    </div>
+    <script src="src2.js"></script>
+    <!-- Sports Section (Initially hidden) -->
+    <div id="sports-section" style="display: none;">
+        <h1>Sports Section</h1>
+        <div class="form-container">
+            <textarea id="postText" placeholder="What's your opinion on sports?" rows="4"></textarea>
+            <button id="submitBtn">Post Opinion</button>
+        </div>
+        <div id="posts" class="posts-feed"></div>
+        <div id="load-more-trigger"></div>
+    </div>
+    <script src="src3.js"></script>
+    <!-- Settings Section (Initially hidden) -->
+    <div id="settings-section" class="settings-section" style="display: none;">
+        <h2>Settings</h2>
+        
+        <!-- Username Section -->
+        <div class="username-settings">
+            <p><strong>Current Username:</strong> <span id="current-username-settings"></span></p>
+            <button onclick="changeUsername()">Change Username</button>
+        </div>
+        <!-- Dark Mode Toggle -->
+        <div class="dark-mode-toggle-container">
+            <label for="dark-mode-toggle" style="margin-right: 10px;">Dark Mode:</label>
+            <input type="checkbox" id="dark-mode-toggle" onclick="toggleDarkMode()" />
+        </div>
+    </div>
+
+    <footer>
+        <p>Powered by Ably & MongoDB Atlas</p>
+    </footer>
+</div> <script>
+// Hide all sections initially
+const hideAllSections = () => {
+    document.getElementById('main-content').style.display = 'none';
+    document.getElementById('settings-section').style.display = 'none';
+    document.getElementById('movies-section').style.display = 'none';
+    document.getElementById('sports-section').style.display = 'none';
+};
+
+// Show the Home Section
+document.getElementById('homeBtn').addEventListener('click', () => {
+    hideAllSections();  // Hide all sections first
+    document.getElementById('main-content').style.display = 'block';  // Show home section
+});
+
+// Show the Movies Section
+document.getElementById('moviesBtn').addEventListener('click', () => {
+    hideAllSections();  // Hide all sections first
+    document.getElementById('movies-section').style.display = 'block';  // Show movies section
+});
+
+// Show the Sports Section
+document.getElementById('sportsBtn').addEventListener('click', () => {
+    hideAllSections();  // Hide all sections first
+    document.getElementById('sports-section').style.display = 'block';  // Show sports section
+});
+
+// Show the Settings Section
+document.getElementById('settingsBtn').addEventListener('click', () => {
+    hideAllSections();  // Hide all sections first
+    document.getElementById('settings-section').style.display = 'block';  // Show settings section
+});
+</script>
