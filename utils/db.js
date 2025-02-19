@@ -4,7 +4,7 @@ import mysql from 'mysql2';
 const pool = mysql.createPool({
   host: 'srv787.hstgr.io',   // e.g. localhost or a remote MySQL server
   user: 'u208245805_Rokiscooking12',   // Your MySQL username
-  password: 'u208245805_Rokiscooking12@',  // Your MySQL password
+  password: 'Rokiscooking12@',  // Your MySQL password
   database: 'u208245805_Rokiscooking12',  // Your MySQL database name
   waitForConnections: true,      // Wait for available connection slots
   connectionLimit: 10,           // Max number of connections in the pool
