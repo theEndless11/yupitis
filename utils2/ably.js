@@ -6,7 +6,7 @@ const ably = new Ably.Realtime('tpvrng.7-V-wA:ar2W4S8_YZX4IlF7XSLcjt2OYIt0ES8ACP
 
 // Function to publish to a specific Ably channel
 function publishToAbly(event, data) {
-  const channel = ably.channels.get('your-channel-name');  // Replace with the dynamic channel name
+  const channel = ably.channels.get('Root');  // Replace with the dynamic channel name
   return channel.publish(event, data);
 }
 
