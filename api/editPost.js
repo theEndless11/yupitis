@@ -1,5 +1,4 @@
 import { promisePool } from '../utils/db'; // MySQL connection pool
-import { format } from 'date-fns'; // Optional: For formatting dates if needed
 
 // Set CORS headers for all methods
 const setCorsHeaders = (res) => {
