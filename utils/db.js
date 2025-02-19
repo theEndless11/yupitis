@@ -1,20 +1,15 @@
-const mysql = require('mysql2'); // No need for 'mysql2/promise' separately
+import mysql from 'mysql2';
 
-require('dotenv').config(); // To load environment variables from .env
-
-// Create a connection pool using environment variables
+// Create a connection pool to your MySQL database
 const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  waitForConnections: true,
-  connectionLimit: 100, // Number of connections allowed in the pool
-  queueLimit: 0 // Unlimited queue length
+  host: 'srv787.hstgr.io',   // e.g. localhost or a remote MySQL server
+  user: 'u208245805_Crypto21',   // Your MySQL username
+  password: 'u208245805_Crypto21@',  // Your MySQL password
+  database: 'u208245805_Crypto21',  // Your MySQL database name
+  waitForConnections: true,      // Wait for available connection slots
+  connectionLimit: 10,           // Max number of connections in the pool
+  queueLimit: 0                  // Max number of requests to queue before returning an error
 });
 
-// Explicitly call .promise() to enable promise-based queries
-const promisePool = pool.promise(); // Here, ensure this line is included
-
-// Export the promise-enabled pool
-module.exports = promisePool; // Export promisePool
+// Wrap the pool to return promises (using async/await)
+export const promisePool = pool.promise();
