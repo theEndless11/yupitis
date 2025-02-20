@@ -7,80 +7,82 @@ const setCorsHeaders = (res) => {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');  // Allowed headers
 };
 
-// Serverless API handler for editing or deleting posts
 export default async function handler(req, res) {
+    console.log("Incoming request body:", req.body);  // Add this line to log the request body
+
     // Handle pre-flight OPTIONS request
     if (req.method === 'OPTIONS') {
         setCorsHeaders(res);
         return res.status(200).end(); // Respond with 200 OK for OPTIONS pre-flight
     }
 
-    // Set CORS headers for all other requests
     setCorsHeaders(res);
 
-    const { id, username, sessionId, message, timestamp } = req.body;
+    // Check if it's a DELETE request
+    if (req.method === 'DELETE') {
+        const { postId, username, sessionId } = req.body;
 
-    // Validate required fields for DELETE and PUT
-    if (!id || !username || !sessionId) {
-        return res.status(400).json({ message: 'Missing required fields: id, username, sessionId' });
-    }
-
-    try {
-        // Fetch the post from the database
-        const [posts] = await promisePool.execute('SELECT * FROM posts WHERE _id = ?', [id]);
-
-        if (posts.length === 0) {
-            return res.status(404).json({ message: 'Post not found' });
+        if (!postId || !username || !sessionId) {
+            return res.status(400).json({ message: 'Missing required fields: postId, username, sessionId' });
         }
 
-        const post = posts[0];
+        try {
+            const [posts] = await promisePool.execute('SELECT * FROM posts WHERE _id = ?', [postId]);
 
-        // Ensure the post belongs to the user making the request
-        if (post.username !== username) {
-            return res.status(403).json({ message: 'You can only edit or delete your own posts' });
-        }
+            if (posts.length === 0) {
+                return res.status(404).json({ message: 'Post not found' });
+            }
 
-        // Handle DELETE request
-        if (req.method === 'DELETE') {
+            const post = posts[0];
+
+            // Ensure the post belongs to the user making the request
+            if (post.username !== username) {
+                return res.status(403).json({ message: 'You can only delete your own posts' });
+            }
+
             // Delete the post from the database
-            await promisePool.execute('DELETE FROM posts WHERE _id = ?', [id]);
+            await promisePool.execute('DELETE FROM posts WHERE _id = ?', [postId]);
+
             return res.status(200).json({ message: 'Post deleted successfully' });
+
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ message: 'Error deleting post', error });
+        }
+    } else if (req.method === 'PUT') {
+        const { id, message, username, timestamp, sessionId } = req.body;
+
+        // Check that all required fields are present
+        if (!id || !message || !username || !timestamp || !sessionId) {
+            return res.status(400).json({ message: 'Missing required fields: id, message, username, timestamp, sessionId' });
         }
 
-        // Handle PUT (Edit) request
-        if (req.method === 'PUT') {
-            // Validate the new fields for editing the post
-            if (!message || !timestamp) {
-                return res.status(400).json({ message: 'Message and timestamp are required to update the post' });
+        try {
+            const [posts] = await promisePool.execute('SELECT * FROM posts WHERE _id = ?', [id]);
+
+            if (posts.length === 0) {
+                return res.status(404).json({ message: 'Post not found' });
             }
 
-            // Ensure timestamp is a valid date string or Date object
-            const validTimestamp = new Date(timestamp);
-            if (isNaN(validTimestamp.getTime())) {
-                return res.status(400).json({ message: 'Invalid timestamp format' });
+            const post = posts[0];
+
+            // Ensure the post belongs to the user making the request
+            if (post.username !== username) {
+                return res.status(403).json({ message: 'You can only edit your own posts' });
             }
 
-            // Update the post in the database
+            // Update the post
             await promisePool.execute(
-                'UPDATE posts SET message = ?, timestamp = ? WHERE _id = ?',
-                [message, validTimestamp.toISOString(), id]
+                `UPDATE posts SET message = ?, timestamp = ? WHERE _id = ?`,
+                [message, timestamp, id]
             );
 
-            // Fetch the updated post to return
-            const [updatedPosts] = await promisePool.execute('SELECT * FROM posts WHERE _id = ?', [id]);
-            const updatedPost = updatedPosts[0];
-
-            // Return updated post
-            return res.status(200).json({ message: 'Post updated successfully', post: updatedPost });
+            return res.status(200).json({ message: 'Post updated successfully', post });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ message: 'Error editing post', error });
         }
-
-        // If method is not DELETE or PUT, return Method Not Allowed
+    } else {
         return res.status(405).json({ message: 'Method Not Allowed' });
-
-    } catch (error) {
-        console.error('Error handling post edit/delete:', error);
-        res.status(500).json({ message: 'Error processing request', error });
     }
 }
-
-
