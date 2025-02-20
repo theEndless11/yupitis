@@ -54,16 +54,23 @@ export default async function handler(req, res) {
                 return res.status(400).json({ message: 'Message and timestamp are required to update the post' });
             }
 
+            // Ensure timestamp is a valid date string or Date object
+            const validTimestamp = new Date(timestamp);
+            if (isNaN(validTimestamp.getTime())) {
+                return res.status(400).json({ message: 'Invalid timestamp format' });
+            }
+
             // Update the post in the database
             await promisePool.execute(
                 'UPDATE posts SET message = ?, timestamp = ? WHERE _id = ?',
-                [message, timestamp, postId]
+                [message, validTimestamp.toISOString(), postId]
             );
 
             // Fetch the updated post to return
             const [updatedPosts] = await promisePool.execute('SELECT * FROM posts WHERE _id = ?', [postId]);
             const updatedPost = updatedPosts[0];
 
+            // Return updated post
             return res.status(200).json({ message: 'Post updated successfully', post: updatedPost });
         }
 
