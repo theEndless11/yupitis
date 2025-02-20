@@ -34,71 +34,76 @@ export default async function handler(req, res) {
 
         const post = posts[0];
 
-        // Convert JSON fields from string to object/array
-        post.likedBy = JSON.parse(post.likedBy || '[]');
-        post.dislikedBy = JSON.parse(post.dislikedBy || '[]');
-        post.comments = JSON.parse(post.comments || '[]');
+     // Convert JSON fields from string to object/array
+post.likedBy = JSON.parse(post.likedBy || '[]');
+post.dislikedBy = JSON.parse(post.dislikedBy || '[]');
+post.comments = JSON.parse(post.comments || '[]');
 
-        // Handle the "like" action
-        if (action === 'like') {
-            // Check if the user has already disliked this post
-            if (post.dislikedBy.includes(username)) {
-                return res.status(400).json({ message: 'You cannot like a post you have disliked' });
-            }
-
-            // Check if the user has already liked this post
-            if (post.likedBy.includes(username)) {
-                return res.status(400).json({ message: 'You have already liked this post' });
-            }
-
-            post.likes += 1;
-            post.likedBy.push(username); // Add the user to the likedBy array
-
-        // Handle the "dislike" action
-        } else if (action === 'dislike') {
-            // Check if the user has already liked this post
-            if (post.likedBy.includes(username)) {
-                return res.status(400).json({ message: 'You cannot dislike a post you have liked' });
-            }
-
-            // Check if the user has already disliked this post
-            if (post.dislikedBy.includes(username)) {
-                return res.status(400).json({ message: 'You have already disliked this post' });
-            }
-
-            post.dislikes += 1;
-            post.dislikedBy.push(username); // Add the user to the dislikedBy array
-
-        // Handle the "comment" action
-        } else if (action === 'comment') {
-            if (!comment || !comment.trim()) {
-                return res.status(400).json({ message: 'Comment cannot be empty' });
-            }
-
-            post.comments.push({ username, comment, timestamp: new Date() });
-
-        } else {
-            return res.status(400).json({ message: 'Invalid action type' });
-        }
-
-        // Update the post in the MySQL database
-        await promisePool.execute(
-            `UPDATE posts SET likes = ?, dislikes = ?, likedBy = ?, dislikedBy = ?, comments = ? WHERE _id = ?`,
-            [
-                post.likes,
-                post.dislikes,
-                JSON.stringify(post.likedBy),
-                JSON.stringify(post.dislikedBy),
-                JSON.stringify(post.comments),
-                postId
-            ]
-        );
-
-        // Return the updated post as a response
-        res.status(200).json(post);
-
-    } catch (error) {
-        console.error("Error updating post:", error);
-        res.status(500).json({ message: 'Error updating post', error });
+// Handle the "like" action
+if (action === 'like') {
+    // Check if the user has already disliked this post
+    if (post.dislikedBy.includes(username)) {
+        // If disliked, remove dislike and decrement dislikes count
+        post.dislikes -= 1;
+        post.dislikedBy = post.dislikedBy.filter(user => user !== username);
     }
+
+    // Toggle like: if the user has already liked, remove like, else add like
+    if (post.likedBy.includes(username)) {
+        post.likes -= 1; // Remove like and decrement like count
+        post.likedBy = post.likedBy.filter(user => user !== username);
+    } else {
+        post.likes += 1; // Add like and increment like count
+        post.likedBy.push(username);
+    }
+
+// Handle the "dislike" action
+} else if (action === 'dislike') {
+    // Check if the user has already liked this post
+    if (post.likedBy.includes(username)) {
+        // If liked, remove like and decrement likes count
+        post.likes -= 1;
+        post.likedBy = post.likedBy.filter(user => user !== username);
+    }
+
+    // Toggle dislike: if the user has already disliked, remove dislike, else add dislike
+    if (post.dislikedBy.includes(username)) {
+        post.dislikes -= 1; // Remove dislike and decrement dislike count
+        post.dislikedBy = post.dislikedBy.filter(user => user !== username);
+    } else {
+        post.dislikes += 1; // Add dislike and increment dislike count
+        post.dislikedBy.push(username);
+    }
+
+// Handle the "comment" action
+} else if (action === 'comment') {
+    if (!comment || !comment.trim()) {
+        return res.status(400).json({ message: 'Comment cannot be empty' });
+    }
+
+    post.comments.push({ username, comment, timestamp: new Date() });
+
+} else {
+    return res.status(400).json({ message: 'Invalid action type' });
+}
+
+// Update the post in the MySQL database
+await promisePool.execute(
+    `UPDATE posts SET likes = ?, dislikes = ?, likedBy = ?, dislikedBy = ?, comments = ? WHERE _id = ?`,
+    [
+        post.likes,
+        post.dislikes,
+        JSON.stringify(post.likedBy),
+        JSON.stringify(post.dislikedBy),
+        JSON.stringify(post.comments),
+        postId
+    ]
+);
+
+// Return the updated post as a response
+res.status(200).json(post);
+
+} catch (error) {
+    console.error("Error updating post:", error);
+    res.status(500).json({ message: 'Error updating post', error });
 }
