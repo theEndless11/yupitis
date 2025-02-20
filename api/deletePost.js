@@ -55,10 +55,10 @@ export default async function handler(req, res) {
 
         const { id, message, username, timestamp, sessionId } = req.body;
 
-        // Check that all required fields are present
-        if (!id || !message || !username || !timestamp || !sessionId) {
-            return res.status(400).json({ message: 'Missing required fields: id, message, username, timestamp, sessionId' });
-        }
+ if (!id || !message || !username || !timestamp) {
+    return res.status(400).json({ message: 'Missing required fields: id, message, username, timestamp' });
+}
+
 
         try {
             const [posts] = await promisePool.execute('SELECT * FROM posts WHERE _id = ?', [id]);
