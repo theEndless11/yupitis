@@ -7,7 +7,7 @@ const setCorsHeaders = (res) => {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');  // Allowed headers
 };
 
-// Serverless API handler for editing or deleting a post
+// Serverless API handler for editing or deleting posts
 export default async function handler(req, res) {
     // Handle pre-flight OPTIONS request
     if (req.method === 'OPTIONS') {
@@ -18,20 +18,11 @@ export default async function handler(req, res) {
     // Set CORS headers for all other requests
     setCorsHeaders(res);
 
-    // Log the incoming request body for debugging
-    console.log("Received request body:", req.body);
+    const { postId, username, sessionId, message, timestamp } = req.body;
 
-    // Ensure the body is valid JSON and extract necessary fields
-    const { postId, username, sessionId, message } = req.body;
-
-    // Check for missing required fields
+    // Validate required fields for DELETE and PUT
     if (!postId || !username || !sessionId) {
         return res.status(400).json({ message: 'Missing required fields: postId, username, sessionId' });
-    }
-
-    // Check if the message is provided for editing (PUT request)
-    if (req.method === 'PUT' && (!message || !message.trim())) {
-        return res.status(400).json({ message: 'Post content cannot be empty' });
     }
 
     try {
@@ -56,24 +47,32 @@ export default async function handler(req, res) {
             return res.status(200).json({ message: 'Post deleted successfully' });
         }
 
-        // Handle PUT (edit) request
+        // Handle PUT (Edit) request
         if (req.method === 'PUT') {
-            // Update the post with the new message
+            // Validate the new fields for editing the post
+            if (!message || !timestamp) {
+                return res.status(400).json({ message: 'Message and timestamp are required to update the post' });
+            }
+
+            // Update the post in the database
             await promisePool.execute(
-                `UPDATE posts SET message = ?, timestamp = ? WHERE _id = ?`,
-                [message, new Date(), postId]
+                'UPDATE posts SET message = ?, timestamp = ? WHERE _id = ?',
+                [message, timestamp, postId]
             );
 
-            // Return the updated post as a response
-            return res.status(200).json({ message: 'Post updated successfully', postId, newMessage: message });
+            // Fetch the updated post to return
+            const [updatedPosts] = await promisePool.execute('SELECT * FROM posts WHERE _id = ?', [postId]);
+            const updatedPost = updatedPosts[0];
+
+            return res.status(200).json({ message: 'Post updated successfully', post: updatedPost });
         }
 
-        // If method is not DELETE or PUT, respond with method not allowed
+        // If method is not DELETE or PUT, return Method Not Allowed
         return res.status(405).json({ message: 'Method Not Allowed' });
 
     } catch (error) {
-        console.error("Error processing the request:", error);
-        res.status(500).json({ message: 'Error processing the request', error });
+        console.error('Error handling post edit/delete:', error);
+        res.status(500).json({ message: 'Error processing request', error });
     }
 }
 
