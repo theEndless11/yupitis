@@ -18,6 +18,9 @@ export default async function handler(req, res) {
     // Set CORS headers for all other requests
     setCorsHeaders(res);
 
+    // Log the request body to check if the fields are being sent
+    console.log("Incoming request body:", req.body);
+
     const { postId, username, sessionId, message } = req.body;
 
     // Validate required fields for both delete and edit
@@ -71,4 +74,5 @@ export default async function handler(req, res) {
         res.status(500).json({ message: 'Error processing the request', error });
     }
 }
+
 
