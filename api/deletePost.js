@@ -18,16 +18,16 @@ export default async function handler(req, res) {
     // Set CORS headers for all other requests
     setCorsHeaders(res);
 
-    const { postId, username, sessionId, message, timestamp } = req.body;
+    const { id, username, sessionId, message, timestamp } = req.body;
 
     // Validate required fields for DELETE and PUT
-    if (!postId || !username || !sessionId) {
-        return res.status(400).json({ message: 'Missing required fields: postId, username, sessionId' });
+    if (!id || !username || !sessionId) {
+        return res.status(400).json({ message: 'Missing required fields: id, username, sessionId' });
     }
 
     try {
         // Fetch the post from the database
-        const [posts] = await promisePool.execute('SELECT * FROM posts WHERE _id = ?', [postId]);
+        const [posts] = await promisePool.execute('SELECT * FROM posts WHERE _id = ?', [id]);
 
         if (posts.length === 0) {
             return res.status(404).json({ message: 'Post not found' });
@@ -43,7 +43,7 @@ export default async function handler(req, res) {
         // Handle DELETE request
         if (req.method === 'DELETE') {
             // Delete the post from the database
-            await promisePool.execute('DELETE FROM posts WHERE _id = ?', [postId]);
+            await promisePool.execute('DELETE FROM posts WHERE _id = ?', [id]);
             return res.status(200).json({ message: 'Post deleted successfully' });
         }
 
@@ -63,11 +63,11 @@ export default async function handler(req, res) {
             // Update the post in the database
             await promisePool.execute(
                 'UPDATE posts SET message = ?, timestamp = ? WHERE _id = ?',
-                [message, validTimestamp.toISOString(), postId]
+                [message, validTimestamp.toISOString(), id]
             );
 
             // Fetch the updated post to return
-            const [updatedPosts] = await promisePool.execute('SELECT * FROM posts WHERE _id = ?', [postId]);
+            const [updatedPosts] = await promisePool.execute('SELECT * FROM posts WHERE _id = ?', [id]);
             const updatedPost = updatedPosts[0];
 
             // Return updated post
