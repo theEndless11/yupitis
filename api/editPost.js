@@ -15,7 +15,7 @@ module.exports = async function handler(req, res) {
         setCorsHeaders(res);
         return res.status(200).end(); // Respond with 200 OK for OPTIONS pre-flight
     }
-  // Set CORS headers for all other requests
+ // Set CORS headers for all other requests
     setCorsHeaders(res);
 
     const { postId, username, action, comment } = req.body;
@@ -47,7 +47,7 @@ module.exports = async function handler(req, res) {
                 post.dislikedBy = post.dislikedBy.filter(user => user !== username);
             }
 
-            // Toggle like: if the user has already liked, remove like, else add like
+            // If the user has already liked the post, remove like and decrement like count
             if (post.likedBy.includes(username)) {
                 post.likes -= 1; // Remove like and decrement like count
                 post.likedBy = post.likedBy.filter(user => user !== username);
@@ -64,7 +64,7 @@ module.exports = async function handler(req, res) {
                 post.likedBy = post.likedBy.filter(user => user !== username);
             }
 
-            // Toggle dislike: if the user has already disliked, remove dislike, else add dislike
+            // If the user has already disliked the post, remove dislike and decrement dislike count
             if (post.dislikedBy.includes(username)) {
                 post.dislikes -= 1; // Remove dislike and decrement dislike count
                 post.dislikedBy = post.dislikedBy.filter(user => user !== username);
