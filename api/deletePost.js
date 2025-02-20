@@ -18,14 +18,20 @@ export default async function handler(req, res) {
     // Set CORS headers for all other requests
     setCorsHeaders(res);
 
-    // Log the request body to check if the fields are being sent
-    console.log("Incoming request body:", req.body);
+    // Log the incoming request body for debugging
+    console.log("Received request body:", req.body);
 
+    // Ensure the body is valid JSON and extract necessary fields
     const { postId, username, sessionId, message } = req.body;
 
-    // Validate required fields for both delete and edit
+    // Check for missing required fields
     if (!postId || !username || !sessionId) {
         return res.status(400).json({ message: 'Missing required fields: postId, username, sessionId' });
+    }
+
+    // Check if the message is provided for editing (PUT request)
+    if (req.method === 'PUT' && (!message || !message.trim())) {
+        return res.status(400).json({ message: 'Post content cannot be empty' });
     }
 
     try {
@@ -52,10 +58,6 @@ export default async function handler(req, res) {
 
         // Handle PUT (edit) request
         if (req.method === 'PUT') {
-            if (!message || !message.trim()) {
-                return res.status(400).json({ message: 'Post content cannot be empty' });
-            }
-
             // Update the post with the new message
             await promisePool.execute(
                 `UPDATE posts SET message = ?, timestamp = ? WHERE _id = ?`,
@@ -70,7 +72,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ message: 'Method Not Allowed' });
 
     } catch (error) {
-        console.error("Error handling post edit or delete:", error);
+        console.error("Error processing the request:", error);
         res.status(500).json({ message: 'Error processing the request', error });
     }
 }
