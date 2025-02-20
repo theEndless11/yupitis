@@ -8,7 +8,7 @@ const setCorsHeaders = (res) => {
 };
 
 export default async function handler(req, res) {
-    console.log("Incoming request body:", req.body);  // Add this line to log the request body
+    console.log("Incoming request body:", req.body);  // Add this line to log the request body for PUT method
 
     // Handle pre-flight OPTIONS request
     if (req.method === 'OPTIONS') {
@@ -18,10 +18,10 @@ export default async function handler(req, res) {
 
     setCorsHeaders(res);
 
-    // Check if it's a DELETE request
     if (req.method === 'DELETE') {
         const { postId, username, sessionId } = req.body;
 
+        // Check that the required fields are present
         if (!postId || !username || !sessionId) {
             return res.status(400).json({ message: 'Missing required fields: postId, username, sessionId' });
         }
@@ -50,6 +50,9 @@ export default async function handler(req, res) {
             return res.status(500).json({ message: 'Error deleting post', error });
         }
     } else if (req.method === 'PUT') {
+        // Log incoming body to confirm
+        console.log("Incoming PUT body:", req.body);
+
         const { id, message, username, timestamp, sessionId } = req.body;
 
         // Check that all required fields are present
