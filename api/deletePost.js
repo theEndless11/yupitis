@@ -1,5 +1,5 @@
 import { promisePool } from '../utils/db'; // MySQL connection pool
-import fs from 'fs'; // File system module for local file deletion (if using local storage)
+import fs from 'fs'; // File system module for local file deletion
 
 const setCorsHeaders = (res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -8,7 +8,7 @@ const setCorsHeaders = (res) => {
 };
 
 export default async function handler(req, res) {
-    console.log("Incoming request body:", req.body);
+    console.log("Incoming request body:", req.body);  // Log the request body
 
     // Handle pre-flight OPTIONS request
     if (req.method === 'OPTIONS') {
@@ -27,13 +27,18 @@ export default async function handler(req, res) {
         }
 
         try {
+            console.log(`Fetching post with postId: ${postId}`); // Log to ensure the correct postId is being used
             const [posts] = await promisePool.execute('SELECT * FROM posts WHERE _id = ?', [postId]);
 
             if (posts.length === 0) {
+                console.log(`No post found with postId: ${postId}`); // Log if no post found
                 return res.status(404).json({ message: 'Post not found' });
             }
 
             const post = posts[0];
+
+            // Log the post retrieved from the database
+            console.log('Post found:', post);
 
             // Ensure the post belongs to the user making the request
             if (post.username !== username) {
@@ -42,6 +47,7 @@ export default async function handler(req, res) {
 
             // If the post has a photo, handle its deletion
             if (post.photo) {
+                console.log(`Deleting photo associated with postId: ${postId}`);  // Log that we are deleting the photo
                 // If photos are stored locally
                 if (post.photo.startsWith('data:image/')) {
                     // Optionally delete local file if photos are stored in the filesystem
@@ -49,8 +55,12 @@ export default async function handler(req, res) {
                     const buffer = Buffer.from(base64Data, 'base64');
                     const filePath = `./uploads/${postId}.jpg`;  // Assuming we save images with the postId
 
+                    // Check if the file exists before attempting to delete
                     if (fs.existsSync(filePath)) {
-                        fs.unlinkSync(filePath);  // Delete the image from file system
+                        fs.unlinkSync(filePath);  // Delete the image from the filesystem
+                        console.log(`Deleted local image file for postId: ${postId}`);  // Log file deletion
+                    } else {
+                        console.log(`No image file found for postId: ${postId}`);  // Log if no file found
                     }
                 }
                 // If photos are stored in cloud storage, you would need to implement cloud delete logic here
