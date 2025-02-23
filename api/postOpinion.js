@@ -1,9 +1,9 @@
-import { promisePool } from '../utils/db';  // Corrected to use MySQL connection pool
-import { publishToAbly } from '../utils/ably';  // Assuming this remains the same
+const { promisePool } = require('../utils/db');  // Corrected to use MySQL connection pool
+const { publishToAbly } = require('../utils/ably');  // Assuming this remains the same
 
 // Set CORS headers
 const setCorsHeaders = (req, res) => {
-    const allowedOrigins = ['https:///latestnewsandaffairs.site'];  // Add more origins if needed
+    const allowedOrigins = ['https://latestnewsandaffairs.site'];  // Add more origins if needed
     const origin = req.headers.origin;
 
     if (allowedOrigins.includes(origin)) {
@@ -19,7 +19,7 @@ const setCorsHeaders = (req, res) => {
 };
 
 // Handle post actions (creating, liking, disliking)
-export default async function handler(req, res) {
+const handler = async (req, res) => {
     if (req.method === 'OPTIONS') {
         setCorsHeaders(req, res);
         return res.status(200).end();
@@ -29,34 +29,48 @@ export default async function handler(req, res) {
 
     // POST: Create new post
     if (req.method === 'POST') {
-        const { message, username, sessionId } = req.body;
+        const { message, username, sessionId, photo } = req.body;
 
-        if (!message || message.trim() === '') {
-            return res.status(400).json({ message: 'Message cannot be empty' });
-        }
+        console.log('Received POST request with body:', req.body);  // Log the body data
+
         if (!username || !sessionId) {
             return res.status(400).json({ message: 'Username and sessionId are required' });
         }
 
+        if (!message && !photo) {
+            return res.status(400).json({ message: 'Post content cannot be empty' });
+        }
+
         try {
-            // Insert the new post into MySQL
+            let photoUrl = null;
+
+            // If a photo is provided (either URL or base64 string), save it in the photo column of posts table
+            if (photo) {
+                console.log('Processing photo data:', photo);  // Log photo data
+                // If you want to store the photo directly in posts, just save the photo URL
+                photoUrl = photo;  // Just use the photo URL or base64 string
+            }
+
+            // Insert the new post into MySQL, with the photo field holding the photo URL
             const [result] = await promisePool.execute(
-                'INSERT INTO posts (message, timestamp, username, sessionId, likes, dislikes, likedBy, dislikedBy, comments) VALUES (?, NOW(), ?, ?, 0, 0, ?, ?, ?)',
-                [message, username, sessionId, JSON.stringify([]), JSON.stringify([]), JSON.stringify([])]
+                'INSERT INTO posts (message, timestamp, username, sessionId, likes, dislikes, likedBy, dislikedBy, comments, photo) VALUES (?, NOW(), ?, ?, 0, 0, ?, ?, ?, ?)',
+                [message || '', username, sessionId, JSON.stringify([]), JSON.stringify([]), JSON.stringify([]), photoUrl || null]
             );
 
             const newPost = {
                 _id: result.insertId,  // MySQL auto-incremented ID
-                message,
+                message: message || '',  // Ensure empty message is allowed
                 timestamp: new Date(),
                 username,
                 likes: 0,
                 dislikes: 0,
                 likedBy: [],
                 dislikedBy: [],
-                comments: []
+                comments: [],
+                photo: photoUrl  // Store the photo URL or base64 string
             };
 
+            // Publish the new post to Ably
             try {
                 await publishToAbly('newOpinion', newPost);
             } catch (error) {
@@ -70,7 +84,7 @@ export default async function handler(req, res) {
         }
     }
 
-    // PUT/PATCH: Handle likes/dislikes
+    // PUT/PATCH: Handle likes/dislikes (same as before)
     if (req.method === 'PUT' || req.method === 'PATCH') {
         const { postId, action, username } = req.body;  // action can be 'like' or 'dislike'
 
@@ -149,4 +163,6 @@ export default async function handler(req, res) {
 
     // Handle other methods
     return res.status(405).json({ message: 'Method Not Allowed' });
-}
+};
+
+module.exports = handler;
