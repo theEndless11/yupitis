@@ -1,7 +1,11 @@
-// /api/update-profile-picture.js
-
 const { promisePool } = require('../utils/db');  // Corrected to use MySQL connection pool
-const { setCorsHeaders } = require('../utils/cors');  // Assuming you have CORS handler
+// Set CORS headers for all methods
+const setCorsHeaders = (res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow all origins or set a specific domain
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS'); // Allowed methods
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Allowed headers
+    res.setHeader('Access-Control-Allow-Credentials', 'true'); // Enable credentials if needed
+};
 
 // Function to update the profile picture in the database
 const updateProfilePicture = async (req, res) => {
