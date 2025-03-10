@@ -55,7 +55,7 @@ module.exports = async function handler(req, res) {
                 }
 
                 return {
-                    id: post.id, // Changed `_id` to `id` for MySQL compatibility
+                       _id: post._id,
                     message: post.message || "",
                     timestamp: post.timestamp,
                     username: post.username,
