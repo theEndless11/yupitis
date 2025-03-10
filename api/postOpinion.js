@@ -29,37 +29,38 @@ const handler = async (req, res) => {
 
     // POST: Create new post
     if (req.method === 'POST') {
-        const { message, username, sessionId, photo } = req.body;
+        const { message, username, sessionId, video } = req.body;
 
-        console.log('Received POST request with body:', req.body);  // Log the body data
+        console.log('Received POST request with body:', req.body);
 
         if (!username || !sessionId) {
             return res.status(400).json({ message: 'Username and sessionId are required' });
         }
 
-        if (!message && !photo) {
+        if (!message && !video) {
             return res.status(400).json({ message: 'Post content cannot be empty' });
         }
 
         try {
-            let photoUrl = null;
+            let videoUrl = null;
 
-            // If a photo is provided (either URL or base64 string), save it in the photo column of posts table
-            if (photo) {
-                console.log('Processing photo data:', photo);  // Log photo data
-                // If you want to store the photo directly in posts, just save the photo URL
-                photoUrl = photo;  // Just use the photo URL or base64 string
+            // If a video is provided (either URL or base64 string), save it in the video column of posts table
+            if (video) {
+                console.log('Processing video data:', video);
+
+                // Save the video data or URL (you might want to save this to a cloud service)
+                videoUrl = video;  // Store base64 or video URL
             }
 
-            // Insert the new post into MySQL, with the photo field holding the photo URL
+            // Insert the new post into MySQL, with the video field holding the video URL
             const [result] = await promisePool.execute(
-                'INSERT INTO posts (message, timestamp, username, sessionId, likes, dislikes, likedBy, dislikedBy, comments, photo) VALUES (?, NOW(), ?, ?, 0, 0, ?, ?, ?, ?)',
-                [message || '', username, sessionId, JSON.stringify([]), JSON.stringify([]), JSON.stringify([]), photoUrl || null]
+                'INSERT INTO posts (message, timestamp, username, sessionId, likes, dislikes, likedBy, dislikedBy, comments, video) VALUES (?, NOW(), ?, ?, 0, 0, ?, ?, ?, ?)',
+                [message || '', username, sessionId, JSON.stringify([]), JSON.stringify([]), JSON.stringify([]), videoUrl || null]
             );
 
             const newPost = {
-                _id: result.insertId,  // MySQL auto-incremented ID
-                message: message || '',  // Ensure empty message is allowed
+                _id: result.insertId,
+                message: message || '',
                 timestamp: new Date(),
                 username,
                 likes: 0,
@@ -67,10 +68,9 @@ const handler = async (req, res) => {
                 likedBy: [],
                 dislikedBy: [],
                 comments: [],
-                photo: photoUrl  // Store the photo URL or base64 string
+                video: videoUrl
             };
 
-            // Publish the new post to Ably
             try {
                 await publishToAbly('newOpinion', newPost);
             } catch (error) {
