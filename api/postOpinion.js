@@ -1,9 +1,5 @@
-const ffmpeg = require('fluent-ffmpeg');
 const { promisePool } = require('../utils/db');  // Corrected to use MySQL connection pool
 const { publishToAbly } = require('../utils/ably');  // Assuming this remains the same
-const uuid = require('uuid');
-const { Readable } = require('stream');  // Node.js Readable stream module
-const Buffer = require('buffer').Buffer;  // To handle binary data
 
 // Set CORS headers
 const setCorsHeaders = (req, res) => {
@@ -55,54 +51,10 @@ const handler = async (req, res) => {
                 photoUrl = photo;  // Just use the photo URL or base64 string
             }
 
-            // If a video is provided (either URL or base64 string), compress and save it in the video column of posts table
+            // If a video is provided (either URL or base64 string), save it in the video column of posts table
             if (video) {
                 console.log('Processing video data:', video);  // Log video data
-
-                // Decode the base64 video data to a buffer
-                const videoBuffer = Buffer.from(video.split(',')[1], 'base64');
-
-                // Create a readable stream from the buffer
-                const videoStream = new Readable();
-                videoStream.push(videoBuffer);
-                videoStream.push(null);  // End of stream
-
-                // Create a new buffer to hold the compressed video
-                const compressedVideoBuffer = await new Promise((resolve, reject) => {
-                    const compressedVideoStream = ffmpeg()
-                        .input(videoStream)
-                        .inputFormat('mp4')  // Input format of the video
-                        .videoCodec('libx264')  // Use H.264 for good compression
-                        .audioCodec('aac')  // Audio codec (optional)
-                        .outputOptions([
-                            '-crf 23',  // Constant rate factor, adjust for file size vs quality
-                            '-preset veryfast',  // Speed vs compression tradeoff
-                            '-max_muxing_queue_size 1024',  // Avoid FFmpeg errors with large files
-                            '-threads 2',  // Limit threads for performance
-                        ])
-                        .on('end', () => {
-                            resolve(compressedVideoBuffer);
-                        })
-                        .on('error', (err) => {
-                            console.error('FFmpeg error:', err);
-                            reject(err);
-                        })
-                        .outputFormat('mp4')  // Output format for the compressed video
-                        .pipe();  // Pipe the result to a buffer
-
-                    // Capture the output as a buffer
-                    const buffers = [];
-                    compressedVideoStream.on('data', (chunk) => {
-                        buffers.push(chunk);
-                    });
-                    compressedVideoStream.on('end', () => {
-                        const finalBuffer = Buffer.concat(buffers);
-                        resolve(finalBuffer);  // Return the final compressed buffer
-                    });
-                });
-
-                // After compression, the `compressedVideoBuffer` contains the video in binary format
-                videoData = compressedVideoBuffer;
+                videoData = video;  // Just use the video URL or base64 string
             }
 
             // Insert the new post into MySQL, with photo and video fields holding the URLs or base64 strings
@@ -122,7 +74,7 @@ const handler = async (req, res) => {
                 dislikedBy: [],
                 comments: [],
                 photo: photoUrl,  // Store the photo URL or base64 string
-                video: videoData   // Store the compressed video buffer directly in the DB
+                video: videoData   // Store the video base64 string or URL
             };
 
             // Publish the new post to Ably
