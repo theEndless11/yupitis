@@ -2,6 +2,7 @@ const ffmpeg = require('fluent-ffmpeg');
 const { promisePool } = require('../utils/db');  // Corrected to use MySQL connection pool
 const { publishToAbly } = require('../utils/ably');  // Assuming this remains the same
 const uuid = require('uuid');
+const { Readable } = require('stream');  // Node.js Readable stream module
 const Buffer = require('buffer').Buffer;  // To handle binary data
 
 // Set CORS headers
@@ -60,12 +61,16 @@ const handler = async (req, res) => {
 
                 // Decode the base64 video data to a buffer
                 const videoBuffer = Buffer.from(video.split(',')[1], 'base64');
-                
+
+                // Create a readable stream from the buffer
+                const videoStream = new Readable();
+                videoStream.push(videoBuffer);
+                videoStream.push(null);  // End of stream
+
                 // Create a new buffer to hold the compressed video
                 const compressedVideoBuffer = await new Promise((resolve, reject) => {
-                    const videoUUID = uuid.v4();
                     const compressedVideoStream = ffmpeg()
-                        .input(Buffer.from(videoBuffer))
+                        .input(videoStream)
                         .inputFormat('mp4')  // Input format of the video
                         .videoCodec('libx264')  // Use H.264 for good compression
                         .audioCodec('aac')  // Audio codec (optional)
@@ -133,7 +138,6 @@ const handler = async (req, res) => {
             return res.status(500).json({ message: 'Error saving post', error });
         }
     }
-
 
 
     // PUT/PATCH: Handle likes/dislikes (same as before)
