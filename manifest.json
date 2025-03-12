@@ -2,7 +2,7 @@
     "name": "Hey",
     "short_name": "Sync",
     "description": "An example of a Progressive Web App",
-    "start_url": "https://latestnewsandaffairs.site/public5/index.html",
+    "start_url": "https://latestnewsandaffairs.site/public/index.html",
     "display": "standalone",   
     "background_color": "#ffffff",
     "theme_color": "#000000",
