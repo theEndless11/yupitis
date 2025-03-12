@@ -3,7 +3,7 @@ const webpush = require('web-push');
 // ✅ Correct VAPID keys (Ensure you generate valid ones using web-push CLI)
 const vapidKeys = {
   publicKey: 'BCzZq7Wez64cFt9f8l2qks35cVlxq8kPnpG9blgxtCI9Zt5KZywPBv1uW9u4oiAjaQ3dfMQoAlWlHRhAMsmH7vM',
-  privateKey: 'MCjliwdjbdaMuo89Q020IQQSW7201jojsnamJQK2291jjsnqoqi1y81o181qywk16219kksbqi1i1gs0q72Q', // Replace with a valid private key
+  privateKey: 'p0zscdpzKVo9cfQZ8Lvi2ZnCrkXbpKZTIT6F1zRcuQQ', // Replace with a valid private key
 };
 
 // Validate VAPID keys before setting
