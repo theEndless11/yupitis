@@ -2,7 +2,7 @@
     "name": "My PWA App",
     "short_name": "PWA App",
     "description": "An example of a Progressive Web App",
-    "start_url": "/index.html",
+    "start_url": "https://latestnewsandaffairs.site/public5/index.html",
     "display": "standalone",   
     "background_color": "#ffffff",
     "theme_color": "#000000",
