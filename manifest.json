@@ -1,6 +1,6 @@
 {
-    "name": "My PWA App",
-    "short_name": "PWA App",
+    "name": "Hey",
+    "short_name": "Elixir",
     "description": "An example of a Progressive Web App",
     "start_url": "https://latestnewsandaffairs.site/public5/index.html",
     "display": "standalone",   
