@@ -1,6 +1,6 @@
 {
     "name": "Hey",
-    "short_name": "Elixir",
+    "short_name": "Sync",
     "description": "An example of a Progressive Web App",
     "start_url": "https://latestnewsandaffairs.site/public5/index.html",
     "display": "standalone",   
@@ -8,12 +8,12 @@
     "theme_color": "#000000",
     "icons": [
       {
-        "src": "https://latestnewsandaffairs.site/public5/WhatsApp Image 2025-03-12 at 15.11.23_e8e2675e.jpg", 
+        "src": "https://latestnewsandaffairs.site/public/WhatsApp Image 2025-03-12 at 15.11.23_e8e2675e.jpg", 
         "sizes": "192x192",
         "type": "image/jpg"
       },
       {
-        "src": "https://latestnewsandaffairs.site/public5/WhatsApp Image 2025-03-12 at 15.11.23_e8e2675e.jpg", 
+        "src": "https://latestnewsandaffairs.site/public/WhatsApp Image 2025-03-12 at 15.11.23_e8e2675e.jpg", 
         "sizes": "512x512",
         "type": "image/jpg"
       }
