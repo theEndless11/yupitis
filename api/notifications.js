@@ -2,8 +2,8 @@ const webpush = require('web-push');
 
 // ✅ Correct VAPID keys (Ensure you generate valid ones using web-push CLI)
 const vapidKeys = {
-  publicKey: 'BCzZq7Wez64cFt9f8l2qks35cVlxq8kPnpG9blgxtCI9Zt5KZywPBv1uW9u4oiAjaQ3dfMQoAlWlHRhAMsmH7vM',
-  privateKey: 'p0zscdpzKVo9cfQZ8Lvi2ZnCrkXbpKZTIT6F1zRcuQQ', // Replace with a valid private key
+  publicKey: 'BDWFE0AQumcurqzZHQZ1gHnFHCsEneKPhJFEUJ6LX751sVcpCCtgOtgteJd_YdHeHocz-tuMSSyW6TJImgJ1dpI',  // Replace with the new public key
+  privateKey: 'wfAWl9DktIq_vce060uMa8bT0bKLp8hokuIAGvaGzoo', // Replace with the new private key
 };
 
 // Validate VAPID keys before setting
@@ -14,7 +14,7 @@ if (!vapidKeys.publicKey || !vapidKeys.privateKey || vapidKeys.privateKey.length
 
 // Set VAPID details for web-push
 webpush.setVapidDetails(
-  'mailto:noname86473@example.com',
+  'mailto:noname86473@example.com',  // Use a valid email address
   vapidKeys.publicKey,
   vapidKeys.privateKey
 );
@@ -63,40 +63,38 @@ module.exports = async (req, res) => {
     }
 
     // ✅ Send Push Notification
-// Send push notifications
-if (action === 'send-push-notification') {
-  if (pushSubscriptions.length === 0) {
-    return res.status(400).json({ message: 'No subscribers to send notifications' });
-  }
+    if (action === 'send-push-notification') {
+      if (pushSubscriptions.length === 0) {
+        return res.status(400).json({ message: 'No subscribers to send notifications' });
+      }
 
-  const notificationPayload = JSON.stringify({
-    title: 'New Post Notification',
-    body: 'A new post has been added!',
-    icon: 'https://latestnewsandaffairs.site/public/web-app-manifest-192x192.png',
-    badge: 'https://latestnewsandaffairs.site/public/web-app-manifest-192x192.png',
-  });
+      const notificationPayload = JSON.stringify({
+        title: 'New Post Notification',
+        body: 'A new post has been added!',
+        icon: 'https://latestnewsandaffairs.site/public/web-app-manifest-192x192.png',
+        badge: 'https://latestnewsandaffairs.site/public/web-app-manifest-192x192.png',
+      });
 
-  // Log the subscriptions and payload before sending
-  console.log('Sending push notification to subscriptions:', pushSubscriptions);
-  const notificationResults = await Promise.allSettled(
-    pushSubscriptions.map((sub) => {
-      console.log('Attempting to send notification to:', sub.endpoint); // Log each endpoint
-      return webpush.sendNotification(sub, notificationPayload)
-        .catch((err) => {
-          console.error('❌ Failed to send notification to:', sub.endpoint, err); // Log failure details
-          return err;
-        });
-    })
-  );
+      // Log the subscriptions and payload before sending
+      console.log('Sending push notification to subscriptions:', pushSubscriptions);
+      const notificationResults = await Promise.allSettled(
+        pushSubscriptions.map((sub) => {
+          console.log('Attempting to send notification to:', sub.endpoint); // Log each endpoint
+          return webpush.sendNotification(sub, notificationPayload)
+            .catch((err) => {
+              console.error('❌ Failed to send notification to:', sub.endpoint, err); // Log failure details
+              return err;
+            });
+        })
+      );
 
-  // Filter out failed subscriptions and log the results
-  pushSubscriptions = pushSubscriptions.filter((_, index) => notificationResults[index].status === 'fulfilled');
-  console.log('Push notification results:', notificationResults);
+      // Filter out failed subscriptions and log the results
+      pushSubscriptions = pushSubscriptions.filter((_, index) => notificationResults[index].status === 'fulfilled');
+      console.log('Push notification results:', notificationResults);
 
-  console.log('✅ Push notifications sent');
-  return res.status(200).json({ message: 'Push notifications sent' });
-}
-
+      console.log('✅ Push notifications sent');
+      return res.status(200).json({ message: 'Push notifications sent' });
+    }
 
     // ❌ Invalid Action
     return res.status(400).json({ message: 'Invalid action' });
@@ -105,3 +103,4 @@ if (action === 'send-push-notification') {
     return res.status(500).json({ message: 'Error processing the request', error });
   }
 };
+
