@@ -63,34 +63,40 @@ module.exports = async (req, res) => {
     }
 
     // ✅ Send Push Notification
-    if (action === 'send-push-notification') {
-      if (pushSubscriptions.length === 0) {
-        return res.status(400).json({ message: 'No subscribers to send notifications' });
-      }
+// Send push notifications
+if (action === 'send-push-notification') {
+  if (pushSubscriptions.length === 0) {
+    return res.status(400).json({ message: 'No subscribers to send notifications' });
+  }
 
-      const notificationPayload = JSON.stringify({
-        title: 'New Post Notification',
-        body: 'A new post has been added!',
-        icon: 'https://latestnewsandaffairs.site/public/web-app-manifest-192x192.png',
-        badge: 'https://latestnewsandaffairs.site/public/web-app-manifest-192x192.png',
-      });
+  const notificationPayload = JSON.stringify({
+    title: 'New Post Notification',
+    body: 'A new post has been added!',
+    icon: 'https://latestnewsandaffairs.site/public/web-app-manifest-192x192.png',
+    badge: 'https://latestnewsandaffairs.site/public/web-app-manifest-192x192.png',
+  });
 
-      // Send notifications
-      const notificationResults = await Promise.allSettled(
-        pushSubscriptions.map((sub) =>
-          webpush.sendNotification(sub, notificationPayload).catch((err) => {
-            console.error('❌ Failed to send notification:', err);
-            return err;
-          })
-        )
-      );
+  // Log the subscriptions and payload before sending
+  console.log('Sending push notification to subscriptions:', pushSubscriptions);
+  const notificationResults = await Promise.allSettled(
+    pushSubscriptions.map((sub) => {
+      console.log('Attempting to send notification to:', sub.endpoint); // Log each endpoint
+      return webpush.sendNotification(sub, notificationPayload)
+        .catch((err) => {
+          console.error('❌ Failed to send notification to:', sub.endpoint, err); // Log failure details
+          return err;
+        });
+    })
+  );
 
-      // ✅ Filter out failed subscriptions
-      pushSubscriptions = pushSubscriptions.filter((_, index) => notificationResults[index].status === 'fulfilled');
+  // Filter out failed subscriptions and log the results
+  pushSubscriptions = pushSubscriptions.filter((_, index) => notificationResults[index].status === 'fulfilled');
+  console.log('Push notification results:', notificationResults);
 
-      console.log('✅ Push notifications sent');
-      return res.status(200).json({ message: 'Push notifications sent' });
-    }
+  console.log('✅ Push notifications sent');
+  return res.status(200).json({ message: 'Push notifications sent' });
+}
+
 
     // ❌ Invalid Action
     return res.status(400).json({ message: 'Invalid action' });
