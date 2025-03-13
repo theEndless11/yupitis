@@ -75,7 +75,7 @@ module.exports = async (req, res) => {
         badge: 'https://latestnewsandaffairs.site/public/web-app-manifest-192x192.png',
       });
 
-      // Log the subscriptions and payload before sending
+        // Log the subscriptions and payload before sending
       console.log('Sending push notification to subscriptions:', pushSubscriptions);
       const notificationResults = await Promise.allSettled(
         pushSubscriptions.map((sub) => {
@@ -103,4 +103,3 @@ module.exports = async (req, res) => {
     return res.status(500).json({ message: 'Error processing the request', error });
   }
 };
-
