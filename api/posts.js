@@ -21,7 +21,7 @@ module.exports = async function handler(req, res) {
 if (req.method === 'GET') {
     const { username_like, start_timestamp, end_timestamp, username, page, limit } = req.query;
 
-    let sqlQuery = 'SELECT * FROM posts';
+    let sqlQuery = 'SELECT id AS _id, title, subject, message, timestamp, username, sessionId, likes, dislikes, likedBy, dislikedBy, comments, photo, video FROM posts';
     let queryParams = [];
 
     // Pagination logic
@@ -83,6 +83,8 @@ if (req.method === 'GET') {
 
             return {
                 _id: post._id,
+                title: post.title, // ✅ Fixed: Now correctly fetching title
+                subject: post.subject, // ✅ Fixed: Now correctly fetching subject
                 message: post.message || "",
                 timestamp: post.timestamp,
                 username: post.username,
@@ -107,7 +109,7 @@ if (req.method === 'GET') {
 
         // Fetch user description if username is provided
         if (username) {
-            const descriptionQuery = 'SELECT description FROM posts WHERE username = ?';
+            const descriptionQuery = 'SELECT description FROM users WHERE username = ?';
             const [userDescriptionResult] = await promisePool.execute(descriptionQuery, [username]);
             response.description = userDescriptionResult.length > 0 ? userDescriptionResult[0].description : '';
         }
