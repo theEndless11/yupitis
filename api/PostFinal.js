@@ -46,13 +46,15 @@ module.exports = async function handler(req, res) {
 
             // Insert the new post into MySQL
             const [result] = await promisePool.execute(
-                `INSERT INTO posts (timestamp, username, sessionId, likes, dislikes, likedBy, dislikedBy, comments, photo,title, subject)
-                VALUES (?, ?, NOW(), ?, ?, 0, 0, ?, ?, ?, ?)` ,
-                [title, subject, username, sessionId, '[]', '[]', '[]', '[]', photoUrl]
+                `INSERT INTO posts (title, subject, timestamp, username, sessionId, likes, dislikes, likedBy, dislikedBy, comments, photo)
+                VALUES (?, ?, NOW(), ?, ?, 0, 0, '[]', '[]', '[]', ?)` , // Corrected SQL Query
+                [title, subject, username, sessionId, photoUrl] // Corrected Parameter Order
             );
 
             const newPost = {
                 _id: result.insertId,
+                title,
+                subject,
                 timestamp: new Date(),
                 username,
                 likes: 0,
@@ -60,9 +62,7 @@ module.exports = async function handler(req, res) {
                 likedBy: [],
                 dislikedBy: [],
                 comments: [],
-                photo: photoUrl,
-                  title,
-                subject
+                photo: photoUrl
             };
 
             // Publish the new post to Ably
@@ -82,3 +82,4 @@ module.exports = async function handler(req, res) {
     // Handle unsupported methods
     return res.status(405).json({ message: 'Method Not Allowed' });
 };
+
