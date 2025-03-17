@@ -43,9 +43,9 @@ module.exports = async function handler(req, res) {
 
             // Insert the new post into MySQL
             const [result] = await promisePool.execute(
-                `INSERT INTO posts (title, subject, timestamp, username, sessionId, likes, dislikes, likedBy, dislikedBy, comments, photo, profile_picture)
+                `INSERT INTO posts (title, subject, timestamp, username, sessionId, likes, dislikes, likedBy, dislikedBy, comments, photo)
                 VALUES (?, ?, NOW(), ?, ?, 0, 0, ?, ?, ?, ?, ?)` ,
-                [title, subject, username, sessionId, '[]', '[]', '[]', photoUrl, profilePicture]
+                [title, subject, username, sessionId, '[]', '[]', '[]', photoUrl]
             );
 
             const newPost = {
