@@ -1,5 +1,6 @@
 // Use require instead of import
 const { promisePool } = require('../utils/db'); // MySQL connection pool
+const { publishToAbly } = require('../utils/ably');  // Assuming this remains the same
 
 // Set CORS headers for all methods
 const setCorsHeaders = (res) => {
