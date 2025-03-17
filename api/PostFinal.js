@@ -12,10 +12,15 @@ const setCorsHeaders = (res) => {
 module.exports = async function handler(req, res) {
     setCorsHeaders(res);
 
-    // Handle pre-flight OPTIONS request
+// Handle post actions (creating, liking, disliking)
+const handler = async (req, res) => {
     if (req.method === 'OPTIONS') {
-        return res.status(200).end(); // End the request immediately after sending a response for OPTIONS
+        setCorsHeaders(req, res);
+        return res.status(200).end();
     }
+
+    setCorsHeaders(req, res);
+
 // POST: Create new post
 if (req.method === 'POST') {
     const { title, subject, username, sessionId, photo } = req.body;
