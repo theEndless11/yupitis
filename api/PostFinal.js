@@ -5,89 +5,86 @@ const { publishToAbly } = require('../utils/ably');  // Assuming this remains th
 // Set CORS headers for all methods
 const setCorsHeaders = (res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');  // Allow all origins or specify your domain
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, OPTIONS');  // Allowed methods
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');  // Allowed headers
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');  // Allowed methods
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');  // Allowed headers
+    res.setHeader('Access-Control-Allow-Credentials', 'true');  // Allow credentials if needed
 };
 
-// Serverless API handler for posts, profile pictures, and user descriptions
+// Serverless API handler
 module.exports = async function handler(req, res) {
     setCorsHeaders(res);
 
-// Handle post actions (creating, liking, disliking)
-const handler = async (req, res) => {
+    // Handle CORS preflight request
     if (req.method === 'OPTIONS') {
-        setCorsHeaders(req, res);
         return res.status(200).end();
     }
 
-    setCorsHeaders(req, res);
+    // POST: Create new post
+    if (req.method === 'POST') {
+        const { title, subject, username, sessionId, photo } = req.body;
 
-// POST: Create new post
-if (req.method === 'POST') {
-    const { title, subject, username, sessionId, photo } = req.body;
-
-    // Validate if username and sessionId are provided
-    if (!username || !sessionId) {
-        return res.status(400).json({ message: 'Username and sessionId are required' });
-    }
-
-    // Validate if either title, subject, or photo is provided
-    if (!title && !subject && !photo) {
-        return res.status(400).json({ message: 'Post content cannot be empty' });
-    }
-
-    try {
-        let profilePicture = 'https://latestnewsandaffairs.site/public/pfp2.jpg'; // Default profile picture
-
-        // Fetch profile picture from the database
-        const [userResult] = await promisePool.execute(
-            'SELECT profile_picture FROM users WHERE username = ? LIMIT 1',  // Assuming profile picture is stored in the 'users' table
-            [username]
-        );
-
-        if (userResult.length > 0 && userResult[0].profile_picture) {
-            profilePicture = userResult[0].profile_picture;
+        // Validate if username and sessionId are provided
+        if (!username || !sessionId) {
+            return res.status(400).json({ message: 'Username and sessionId are required' });
         }
 
-        let photoUrl = photo || null;  // If no photo is provided, set to null
+        // Validate if either title, subject, or photo is provided
+        if (!title && !subject && !photo) {
+            return res.status(400).json({ message: 'Post content cannot be empty' });
+        }
 
-        // Insert the new post into MySQL
-        const [result] = await promisePool.execute(
-            `INSERT INTO posts (title, subject, timestamp, username, sessionId, likes, dislikes, likedBy, dislikedBy, comments, photo, profile_picture)
-            VALUES (?, ?, NOW(), ?, ?, 0, 0, ?, ?, ?, ?, ?)`,
-            [title, subject, username, sessionId, '[]', '[]', '[]', photoUrl, profilePicture]
-        );
-
-        const newPost = {
-            _id: result.insertId,
-            title,
-            subject,
-            timestamp: new Date(),
-            username,
-            likes: 0,
-            dislikes: 0,
-            likedBy: [],
-            dislikedBy: [],
-            comments: [],
-            photo: photoUrl,
-            profilePicture
-        };
-
-        // Publish the new post to Ably
         try {
-            await publishToAbly('newOpinion', newPost);
-        } catch (error) {
-            console.error('Error publishing to Ably:', error);
-        }
+            let profilePicture = 'https://latestnewsandaffairs.site/public/pfp2.jpg'; // Default profile picture
 
-        return res.status(201).json(newPost);  // Return the newly created post as a response
-    } catch (error) {
-        console.error('Error saving post:', error);
-        return res.status(500).json({ message: 'Error saving post', error });  // Return error if something fails
+            // Fetch profile picture from the database
+            const [userResult] = await promisePool.execute(
+                'SELECT profile_picture FROM users WHERE username = ? LIMIT 1',
+                [username]
+            );
+
+            if (userResult.length > 0 && userResult[0].profile_picture) {
+                profilePicture = userResult[0].profile_picture;
+            }
+
+            let photoUrl = photo || null;  // If no photo is provided, set to null
+
+            // Insert the new post into MySQL
+            const [result] = await promisePool.execute(
+                `INSERT INTO posts (title, subject, timestamp, username, sessionId, likes, dislikes, likedBy, dislikedBy, comments, photo, profile_picture)
+                VALUES (?, ?, NOW(), ?, ?, 0, 0, ?, ?, ?, ?, ?)`,
+                [title, subject, username, sessionId, '[]', '[]', '[]', photoUrl, profilePicture]
+            );
+
+            const newPost = {
+                _id: result.insertId,
+                title,
+                subject,
+                timestamp: new Date(),
+                username,
+                likes: 0,
+                dislikes: 0,
+                likedBy: [],
+                dislikedBy: [],
+                comments: [],
+                photo: photoUrl,
+                profilePicture
+            };
+
+            // Publish the new post to Ably
+            try {
+                await publishToAbly('newOpinion', newPost);
+            } catch (error) {
+                console.error('Error publishing to Ably:', error);
+            }
+
+            return res.status(201).json(newPost);
+        } catch (error) {
+            console.error('Error saving post:', error);
+            return res.status(500).json({ message: 'Error saving post', error });
+        }
     }
-}
-  // Handle unsupported methods
+
+    // Handle unsupported methods
     return res.status(405).json({ message: 'Method Not Allowed' });
 };
 
-module.exports = handler;
