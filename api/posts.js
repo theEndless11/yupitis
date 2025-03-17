@@ -21,7 +21,7 @@ module.exports = async function handler(req, res) {
 if (req.method === 'GET') {
     const { username_like, start_timestamp, end_timestamp, username, page, limit } = req.query;
 
-    let sqlQuery = 'SELECT id AS _id, title, subject, message, timestamp, username, sessionId, likes, dislikes, likedBy, dislikedBy, comments, photo, video FROM posts';
+    let sqlQuery = 'SELECT _id, title, subject, message, timestamp, username, sessionId, likes, dislikes, likedBy, dislikedBy, comments, photo, video FROM posts';
     let queryParams = [];
 
     // Pagination logic
@@ -82,9 +82,9 @@ if (req.method === 'GET') {
             }
 
             return {
-                _id: post._id,
-                title: post.title, // ✅ Fixed: Now correctly fetching title
-                subject: post.subject, // ✅ Fixed: Now correctly fetching subject
+                _id: post._id,  // ✅ No renaming needed, as it's already `_id` in DB
+                title: post.title,
+                subject: post.subject,
                 message: post.message || "",
                 timestamp: post.timestamp,
                 username: post.username,
@@ -121,7 +121,6 @@ if (req.method === 'GET') {
         return res.status(500).json({ message: 'Error retrieving posts', error });
     }
 }
-
 
     // Return 405 for any unsupported methods
     return res.status(405).json({ message: 'Method Not Allowed' });
