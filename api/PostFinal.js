@@ -2,17 +2,25 @@
 const { promisePool } = require('../utils/db'); // MySQL connection pool
 const { publishToAbly } = require('../utils/ably');  // Assuming this remains the same
 
-// Set CORS headers for all methods
-const setCorsHeaders = (res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');  // Allow all origins or specify your domain
+// Allowed origins (Update this with your frontend domain)
+const allowedOrigins = ['https://latestnewsandaffairs.site', 'http://localhost:3000']; 
+
+// Set CORS headers dynamically
+const setCorsHeaders = (req, res) => {
+    const origin = req.headers.origin;
+
+    if (allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);  // Set to the request's origin
+        res.setHeader('Access-Control-Allow-Credentials', 'true');  // Allow credentials
+    }
+
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');  // Allowed methods
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');  // Allowed headers
-    res.setHeader('Access-Control-Allow-Credentials', 'true');  // Allow credentials if needed
 };
 
 // Serverless API handler
 module.exports = async function handler(req, res) {
-    setCorsHeaders(res);
+    setCorsHeaders(req, res);
 
     // Handle CORS preflight request
     if (req.method === 'OPTIONS') {
@@ -51,7 +59,7 @@ module.exports = async function handler(req, res) {
             // Insert the new post into MySQL
             const [result] = await promisePool.execute(
                 `INSERT INTO posts (title, subject, timestamp, username, sessionId, likes, dislikes, likedBy, dislikedBy, comments, photo, profile_picture)
-                VALUES (?, ?, NOW(), ?, ?, 0, 0, ?, ?, ?, ?, ?)`,
+                VALUES (?, ?, NOW(), ?, ?, 0, 0, ?, ?, ?, ?, ?)` ,
                 [title, subject, username, sessionId, '[]', '[]', '[]', photoUrl, profilePicture]
             );
 
@@ -87,4 +95,3 @@ module.exports = async function handler(req, res) {
     // Handle unsupported methods
     return res.status(405).json({ message: 'Method Not Allowed' });
 };
-
