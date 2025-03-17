@@ -59,8 +59,7 @@ module.exports = async function handler(req, res) {
                 likedBy: [],
                 dislikedBy: [],
                 comments: [],
-                photo: photoUrl,
-                profilePicture
+                photo: photoUrl
             };
 
             // Publish the new post to Ably
