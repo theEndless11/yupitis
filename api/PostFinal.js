@@ -41,21 +41,6 @@ module.exports = async function handler(req, res) {
             return res.status(400).json({ message: 'Post content cannot be empty' });
         }
 
-        try {
-            let profilePicture = 'https://latestnewsandaffairs.site/public/pfp2.jpg'; // Default profile picture
-
-            // Fetch profile picture from the database
-            const [userResult] = await promisePool.execute(
-                'SELECT profile_picture FROM users WHERE username = ? LIMIT 1',
-                [username]
-            );
-
-            if (userResult.length > 0 && userResult[0].profile_picture) {
-                profilePicture = userResult[0].profile_picture;
-            }
-
-            let photoUrl = photo || null;  // If no photo is provided, set to null
-
             // Insert the new post into MySQL
             const [result] = await promisePool.execute(
                 `INSERT INTO posts (title, subject, timestamp, username, sessionId, likes, dislikes, likedBy, dislikedBy, comments, photo, profile_picture)
