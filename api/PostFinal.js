@@ -89,3 +89,5 @@ if (req.method === 'POST') {
   // Handle unsupported methods
     return res.status(405).json({ message: 'Method Not Allowed' });
 };
+
+module.exports = handler;
