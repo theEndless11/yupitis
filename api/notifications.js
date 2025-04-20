@@ -72,7 +72,7 @@ module.exports = async (req, res) => {
         title: 'New Post Notification',
         body: 'A new post has been added!',
         icon: 'https://latestnewsandaffairs.site/public/web-app-manifest-192x192.png',
-        badge: 'https://latestnewsandaffairs.site/public/web-app-manifest-192x192.png',
+        badge: 'https://latestnewsandaffairs.site/public/badge.png',
       });
 
         // Log the subscriptions and payload before sending
