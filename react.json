@@ -2,6 +2,10 @@
   "files": {
     "main.css": "https://latestnewsandaffairs.site/main.css",
     "main.js": "https://latestnewsandaffairs.site/main.js",
-    "next.html": "https://latestnewsandaffairs.site/next.html"
+    "next.html": "https://latestnewsandaffairs.site/next.html",
+    "polyfills.js": "https://latestnewsandaffairs.site/pollyfills.js",
+    "framework.js": "https://latestnewsandaffairs.site/framework.js",
+    "webpack.js": "https://latestnewsandaffairs.site/webpack.js"
   }
 }
+
