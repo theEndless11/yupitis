@@ -153,6 +153,7 @@ module.exports = async (req, res) => {
         const safeMemberships = Array.isArray(userMemberships) ? userMemberships : [];
         const safePendingRequests = Array.isArray(pendingRequests) ? pendingRequests : [];
 
+        // Updated to use camelCase column names from database
         const memberGroupIds = safeMemberships.map(m => m.groupId);
         const joinedGroups = [];
         const availableGroups = [];
@@ -163,7 +164,7 @@ module.exports = async (req, res) => {
             joinedGroups.push({ 
               ...group, 
               userRole: membership?.role || 'member', 
-              joinedAt: membership?.joinedAt || null, 
+              joinedAt: membership?.joined_at || null, 
               isMember: true 
             });
           } else {
