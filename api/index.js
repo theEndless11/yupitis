@@ -18,12 +18,18 @@ const setCorsHeaders = (req, res) => {
 };
 
 const getUserFromRequest = (req) => {
-  const userIdFromHeader = req.headers['x-user-id'];
-  const userId = req.query?.userId || userIdFromHeader || req.user?.userId;
+  // Handle different request structures (serverless vs regular)
+  const headers = req.headers || {};
+  const query = req.query || {};
+  const body = req.body || {};
+  const user = req.user || {};
+  
+  const userIdFromHeader = headers['x-user-id'];
+  const userId = query.userId || userIdFromHeader || user.userId;
   
   return {
     userId: userId || null,
-    username: req.query?.username || req.user?.username || null
+    username: query.username || user.username || null
   };
 };
 
@@ -58,6 +64,15 @@ const sendResponse = (res, statusCode, data) => {
 };
 
 module.exports = async (req, res) => {
+  // Add defensive checks for serverless environments
+  if (!req || !res) {
+    console.error('Invalid request or response object');
+    return;
+  }
+  
+  // Ensure headers exist
+  req.headers = req.headers || {};
+  
   setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
