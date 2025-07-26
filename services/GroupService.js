@@ -19,7 +19,7 @@ module.exports = (mysql) => {
     // Get all groups
     async getAllGroups() {
       try {
-        const [rows] = await mysql.query('SELECT * FROM groups ORDER BY createdAt DESC');
+        const [rows] = await mysql.query('SELECT * FROM groups ORDER BY created_at DESC');
         return rows || [];
       } catch (error) {
         console.error('Error in getAllGroups:', error);
@@ -41,11 +41,11 @@ module.exports = (mysql) => {
       }
     },
 
-    // Get all memberships for a user
+    // Get all active memberships for a user
     async getUserMemberships(userId) {
       try {
         const [rows] = await mysql.query(
-          `SELECT gm.*, g.name as group_name, g.description as group_description 
+          `SELECT gm.*, g.name AS group_name, g.description AS group_description 
            FROM group_memberships gm 
            JOIN groups g ON gm.groupId = g.id 
            WHERE gm.userId = ? AND gm.status = 'active'
@@ -60,48 +60,46 @@ module.exports = (mysql) => {
     },
 
     // Get pending join requests for a user
-async getPendingRequests(userId) {
-  try {
-    const [rows] = await mysql.query(
-      `SELECT pr.*, g.name AS group_name 
-       FROM pending_requests pr 
-       JOIN groups g ON pr.groupId = g.id 
-       WHERE pr.userId = ? AND pr.status = 'pending'
-       ORDER BY pr.requestedAt DESC`,
-      [userId]
-    );
-    return rows || [];
-  } catch (error) {
-    console.error('Error in getPendingRequests:', error);
-    if (error.code === 'ER_NO_SUCH_TABLE') {
-      console.warn('pending_requests table does not exist, returning empty array');
-      return [];
-    }
-    throw error;
-  }
-}
-
+    async getPendingRequests(userId) {
+      try {
+        const [rows] = await mysql.query(
+          `SELECT pr.*, g.name AS group_name 
+           FROM pending_requests pr 
+           JOIN groups g ON pr.groupId = g.id 
+           WHERE pr.userId = ? AND pr.status = 'pending'
+           ORDER BY pr.requestedAt DESC`,
+          [userId]
+        );
+        return rows || [];
+      } catch (error) {
+        console.error('Error in getPendingRequests:', error);
+        if (error.code === 'ER_NO_SUCH_TABLE') {
+          console.warn('pending_requests table does not exist, returning empty array');
+          return [];
+        }
+        throw error;
+      }
+    },
 
     // Join a group
     async joinGroup(userId, username, groupId) {
       try {
-        // Check if user is already a member
         const [existing] = await mysql.query(
           'SELECT * FROM group_memberships WHERE userId = ? AND groupId = ?',
           [userId, groupId]
         );
-        
+
         if (existing.length > 0) {
           return existing[0]; // Already a member
         }
 
-        // Check if group requires approval (if you have this feature)
-        const [groupRows] = await mysql.query('SELECT requires_approval FROM groups WHERE id = ?', [groupId]);
+        const [groupRows] = await mysql.query(
+          'SELECT requires_approval FROM groups WHERE id = ?',
+          [groupId]
+        );
+
         const group = groupRows[0];
-        
-        // For now, assuming all groups allow direct joining (status = 'active')
-        // If you want approval system, you'd check group.requires_approval and set status = 'pending'
-        const status = 'active';
+        const status = group?.requires_approval ? 'pending' : 'active';
         const role = 'member';
         const joinedAt = new Date();
 
@@ -110,11 +108,11 @@ async getPendingRequests(userId) {
           [userId, groupId, username, role, status, joinedAt]
         );
 
-        return { 
-          userId, 
-          groupId, 
-          username, 
-          role, 
+        return {
+          userId,
+          groupId,
+          username,
+          role,
           status,
           joinedAt
         };
@@ -127,11 +125,11 @@ async getPendingRequests(userId) {
     // Leave a group
     async leaveGroup(userId, groupId) {
       try {
-        const result = await mysql.query(
+        const [result] = await mysql.query(
           'DELETE FROM group_memberships WHERE userId = ? AND groupId = ?',
           [userId, groupId]
         );
-        return result[0].affectedRows > 0;
+        return result.affectedRows > 0;
       } catch (error) {
         console.error('Error in leaveGroup:', error);
         throw error;
@@ -141,22 +139,20 @@ async getPendingRequests(userId) {
     // Cancel a join request
     async cancelJoinRequest(requestId, userId) {
       try {
-        // First try to delete from join_requests table if it exists
         try {
-          const result = await mysql.query(
+          const [result] = await mysql.query(
             'DELETE FROM join_requests WHERE id = ? AND userId = ?',
             [requestId, userId]
           );
-          return result[0].affectedRows > 0;
+          return result.affectedRows > 0;
         } catch (error) {
           if (error.code === 'ER_NO_SUCH_TABLE') {
-            // If join_requests table doesn't exist, try to update membership status
             console.warn('join_requests table does not exist, trying to remove pending membership');
-            const result = await mysql.query(
+            const [result] = await mysql.query(
               'DELETE FROM group_memberships WHERE id = ? AND userId = ? AND status = "pending"',
               [requestId, userId]
             );
-            return result[0].affectedRows > 0;
+            return result.affectedRows > 0;
           }
           throw error;
         }
@@ -168,12 +164,9 @@ async getPendingRequests(userId) {
 
     // Get user permissions based on their role
     getPermissions(membership) {
-      if (!membership) {
-        return [];
-      }
-      
-      const role = membership.role;
-      switch (role) {
+      if (!membership) return [];
+
+      switch (membership.role) {
         case 'admin':
           return ['read', 'write', 'delete', 'manage_members', 'manage_group'];
         case 'moderator':
@@ -184,7 +177,7 @@ async getPendingRequests(userId) {
       }
     },
 
-    // Create a new group (bonus method you might need)
+    // Create a new group
     async createGroup(name, description, createdBy) {
       try {
         const createdAt = new Date();
@@ -192,15 +185,14 @@ async getPendingRequests(userId) {
           'INSERT INTO groups (name, description, created_by, created_at) VALUES (?, ?, ?, ?)',
           [name, description, createdBy, createdAt]
         );
-        
+
         const groupId = result.insertId;
-        
-        // Make creator an admin
+
         await mysql.query(
           'INSERT INTO group_memberships (userId, groupId, username, role, status, joined_at) VALUES (?, ?, ?, ?, ?, ?)',
           [createdBy, groupId, 'Admin', 'admin', 'active', createdAt]
         );
-        
+
         return {
           id: groupId,
           name,
@@ -214,7 +206,7 @@ async getPendingRequests(userId) {
       }
     },
 
-    // Get group members (bonus method)
+    // Get all members in a group
     async getGroupMembers(groupId) {
       try {
         const [rows] = await mysql.query(
@@ -229,3 +221,4 @@ async getPendingRequests(userId) {
     }
   };
 };
+
