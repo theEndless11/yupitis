@@ -60,27 +60,27 @@ module.exports = (mysql) => {
     },
 
     // Get pending join requests for a user
-    async getPendingRequests(userId) {
-      try {
-        const [rows] = await mysql.query(
-          `SELECT jr.*, g.name as group_name 
-           FROM join_requests jr 
-           JOIN groups g ON jr.groupId = g.id 
-           WHERE jr.userId = ? AND jr.status = 'pending'
-           ORDER BY jr.createdAt DESC`,
-          [userId]
-        );
-        return rows || [];
-      } catch (error) {
-        console.error('Error in getPendingRequests:', error);
-        // If join_requests table doesn't exist, return empty array
-        if (error.code === 'ER_NO_SUCH_TABLE') {
-          console.warn('join_requests table does not exist, returning empty array');
-          return [];
-        }
-        throw error;
-      }
-    },
+async getPendingRequests(userId) {
+  try {
+    const [rows] = await mysql.query(
+      `SELECT pr.*, g.name AS group_name 
+       FROM pending_requests pr 
+       JOIN groups g ON pr.groupId = g.id 
+       WHERE pr.userId = ? AND pr.status = 'pending'
+       ORDER BY pr.requestedAt DESC`,
+      [userId]
+    );
+    return rows || [];
+  } catch (error) {
+    console.error('Error in getPendingRequests:', error);
+    if (error.code === 'ER_NO_SUCH_TABLE') {
+      console.warn('pending_requests table does not exist, returning empty array');
+      return [];
+    }
+    throw error;
+  }
+}
+
 
     // Join a group
     async joinGroup(userId, username, groupId) {
