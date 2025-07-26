@@ -31,7 +31,7 @@ module.exports = (mysql) => {
     async getMembership(userId, groupId) {
       try {
         const [rows] = await mysql.query(
-          'SELECT * FROM group_memberships WHERE user_id = ? AND group_id = ?',
+          'SELECT * FROM group_memberships WHERE userId = ? AND groupId = ?',
           [userId, groupId]
         );
         return rows[0] || null;
@@ -47,8 +47,8 @@ module.exports = (mysql) => {
         const [rows] = await mysql.query(
           `SELECT gm.*, g.name as group_name, g.description as group_description 
            FROM group_memberships gm 
-           JOIN groups g ON gm.group_id = g.id 
-           WHERE gm.user_id = ? AND gm.status = 'active'
+           JOIN groups g ON gm.groupId = g.id 
+           WHERE gm.userId = ? AND gm.status = 'active'
            ORDER BY gm.joined_at DESC`,
           [userId]
         );
@@ -65,8 +65,8 @@ module.exports = (mysql) => {
         const [rows] = await mysql.query(
           `SELECT jr.*, g.name as group_name 
            FROM join_requests jr 
-           JOIN groups g ON jr.group_id = g.id 
-           WHERE jr.user_id = ? AND jr.status = 'pending'
+           JOIN groups g ON jr.groupId = g.id 
+           WHERE jr.userId = ? AND jr.status = 'pending'
            ORDER BY jr.created_at DESC`,
           [userId]
         );
@@ -87,7 +87,7 @@ module.exports = (mysql) => {
       try {
         // Check if user is already a member
         const [existing] = await mysql.query(
-          'SELECT * FROM group_memberships WHERE user_id = ? AND group_id = ?',
+          'SELECT * FROM group_memberships WHERE userId = ? AND groupId = ?',
           [userId, groupId]
         );
         
@@ -106,7 +106,7 @@ module.exports = (mysql) => {
         const joinedAt = new Date();
 
         await mysql.query(
-          'INSERT INTO group_memberships (user_id, group_id, username, role, status, joined_at) VALUES (?, ?, ?, ?, ?, ?)',
+          'INSERT INTO group_memberships (userId, groupId, username, role, status, joined_at) VALUES (?, ?, ?, ?, ?, ?)',
           [userId, groupId, username, role, status, joinedAt]
         );
 
@@ -128,7 +128,7 @@ module.exports = (mysql) => {
     async leaveGroup(userId, groupId) {
       try {
         const result = await mysql.query(
-          'DELETE FROM group_memberships WHERE user_id = ? AND group_id = ?',
+          'DELETE FROM group_memberships WHERE userId = ? AND groupId = ?',
           [userId, groupId]
         );
         return result[0].affectedRows > 0;
@@ -144,7 +144,7 @@ module.exports = (mysql) => {
         // First try to delete from join_requests table if it exists
         try {
           const result = await mysql.query(
-            'DELETE FROM join_requests WHERE id = ? AND user_id = ?',
+            'DELETE FROM join_requests WHERE id = ? AND userId = ?',
             [requestId, userId]
           );
           return result[0].affectedRows > 0;
@@ -153,7 +153,7 @@ module.exports = (mysql) => {
             // If join_requests table doesn't exist, try to update membership status
             console.warn('join_requests table does not exist, trying to remove pending membership');
             const result = await mysql.query(
-              'DELETE FROM group_memberships WHERE id = ? AND user_id = ? AND status = "pending"',
+              'DELETE FROM group_memberships WHERE id = ? AND userId = ? AND status = "pending"',
               [requestId, userId]
             );
             return result[0].affectedRows > 0;
@@ -197,7 +197,7 @@ module.exports = (mysql) => {
         
         // Make creator an admin
         await mysql.query(
-          'INSERT INTO group_memberships (user_id, group_id, username, role, status, joined_at) VALUES (?, ?, ?, ?, ?, ?)',
+          'INSERT INTO group_memberships (userId, groupId, username, role, status, joined_at) VALUES (?, ?, ?, ?, ?, ?)',
           [createdBy, groupId, 'Admin', 'admin', 'active', createdAt]
         );
         
@@ -218,7 +218,7 @@ module.exports = (mysql) => {
     async getGroupMembers(groupId) {
       try {
         const [rows] = await mysql.query(
-          'SELECT user_id, username, role, status, joined_at FROM group_memberships WHERE group_id = ? ORDER BY joined_at ASC',
+          'SELECT userId, username, role, status, joined_at FROM group_memberships WHERE groupId = ? ORDER BY joined_at ASC',
           [groupId]
         );
         return rows || [];
