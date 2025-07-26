@@ -22,7 +22,8 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    const query = parseQuery(req.url);
+     const urlObj = new URL(req.url, `http://${req.headers.host}`);
+const query = Object.fromEntries(urlObj.searchParams.entries());
     const body = await parseBody(req);
     const user = getUserFromRequest({ ...req, query, body });
     const { method, url } = req;
