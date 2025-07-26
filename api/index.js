@@ -71,13 +71,24 @@ module.exports = async (req, res) => {
     // GET /api/index - Get groups for user
     if (method === 'GET' && url.startsWith('/api/index')) {
       const userId = query.userId || user.userId;
+      console.log('GET /api/index - userId:', userId);
       if (!userId) return sendResponse(res, 400, { error: 'Missing userId parameter' });
 
-      const [allGroups, userMemberships, pendingRequests] = await Promise.all([
-        GroupService.getAllGroups(),
-        GroupService.getUserMemberships(userId),
-        GroupService.getPendingRequests(userId)
-      ]);
+      try {
+        const [allGroups, userMemberships, pendingRequests] = await Promise.all([
+          GroupService.getAllGroups(),
+          GroupService.getUserMemberships(userId),
+          GroupService.getPendingRequests(userId)
+        ]);
+        console.log('Fetched data:', { 
+          groupsCount: allGroups.length, 
+          membershipsCount: userMemberships.length, 
+          pendingCount: pendingRequests.length 
+        });
+      } catch (serviceError) {
+        console.error('Service error:', serviceError);
+        return sendResponse(res, 500, { error: 'Database error: ' + serviceError.message });
+      }
 
       const memberGroupIds = userMemberships.map(m => m.groupId);
       const joinedGroups = [], availableGroups = [];
@@ -246,7 +257,7 @@ module.exports = async (req, res) => {
     return sendResponse(res, 404, { error: 'Route not found' });
 
   } catch (error) {
+    console.error('API Error:', error);
     return sendResponse(res, 500, { error: error.message });
   }
 };
-
