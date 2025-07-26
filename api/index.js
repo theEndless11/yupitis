@@ -1,7 +1,22 @@
 const mysql = require('../utils/mysql');
 const postgres = require('../utils/postgress');
-const GroupService = require('../services/GroupService')(mysql);
-const MessageService = require('../services/MessageService')(postgres);
+
+// Initialize services with error handling
+let GroupService, MessageService;
+try {
+  const GroupServiceFactory = require('../services/GroupService');
+  const MessageServiceFactory = require('../services/MessageService');
+  
+  GroupService = GroupServiceFactory(mysql);
+  MessageService = MessageServiceFactory(postgres);
+  
+  // Verify services have required methods
+  console.log('GroupService methods:', Object.keys(GroupService));
+  console.log('MessageService methods:', Object.keys(MessageService));
+} catch (error) {
+  console.error('Service initialization error:', error);
+}
+
 const EventBus = require('../services/EventBus');
 
 // CORS handling
@@ -88,6 +103,12 @@ module.exports = async (req, res) => {
       const userId = query.userId || user.userId;
       console.log('GET /api/index - userId:', userId);
       if (!userId) return sendResponse(res, 400, { error: 'Missing userId parameter' });
+
+      // Check if services are properly initialized
+      if (!GroupService || !GroupService.getAllGroups) {
+        console.error('GroupService not properly initialized');
+        return sendResponse(res, 500, { error: 'Service not available' });
+      }
 
       try {
         const [allGroups, userMemberships, pendingRequests] = await Promise.all([
