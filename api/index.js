@@ -1,31 +1,20 @@
 const mysql = require('../utils/mysql');
 const postgres = require('../utils/postgress');
 
-// Initialize services with error handling
-let GroupService, MessageService;
-try {
-  const GroupServiceFactory = require('../services/GroupService');
-  const MessageServiceFactory = require('../services/MessageService');
-  
-  if (!mysql || !postgres) {
-    throw new Error('Database connections not available');
-  }
-  
-  GroupService = GroupServiceFactory(mysql);
-  MessageService = MessageServiceFactory(postgres);
-  
-  if (!GroupService || !MessageService) {
-    throw new Error('Failed to create services');
-  }
-  
-  console.log('Services initialized successfully');
-} catch (error) {
-  console.error('Service initialization error:', error);
-  throw error;
-}
-
+const GroupServiceFactory = require('../services/GroupService');
+const MessageServiceFactory = require('../services/MessageService');
 const EventBus = require('../services/EventBus');
 
+if (!mysql || !postgres) {
+  throw new Error('Database connections not available');
+}
+
+const GroupService = GroupServiceFactory(mysql);
+const MessageService = MessageServiceFactory(postgres);
+
+if (!GroupService || !MessageService) {
+  throw new Error('Failed to create services');
+}
 // CORS handling
 const allowedOrigins = ['https://latestnewsandaffairs.site', 'http://localhost:5173'];
 const setCorsHeaders = (req, res) => {
@@ -386,3 +375,11 @@ if (method === 'POST' && urlParts[0] === 'groups' && urlParts[2] === 'requests' 
 }
 
 return sendResponse(res, 404, { error: 'Route not found' });
+      } catch (error) {
+    console.error('API Error:', error);
+    return sendResponse(res, 500, { 
+      error: 'Internal server error',
+      message: error.message
+    });
+  }
+};
