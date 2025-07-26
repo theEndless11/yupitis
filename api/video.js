@@ -19,18 +19,23 @@ const S3 = new S3Client({
   },
 });
 
-// --- CORS Headers for localhost:5172 and browsers ---
-const setCorsHeaders = (res) => {
-  res.setHeader("Access-Control-Allow-Origin", "http://localhost:5172");
+// --- Dynamic CORS Headers ---
+const allowedOrigins = ["http://localhost:5172", "http://localhost:5173"];
+
+const setCorsHeaders = (req, res) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.setHeader("Access-Control-Allow-Credentials", "true");
 };
 
-// --- Multer Config for Video Upload ---
+// --- Multer Config ---
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith("video/")) {
       cb(null, true);
@@ -39,14 +44,13 @@ const upload = multer({
     }
   },
 });
-
 const multerMiddleware = util.promisify(upload.single("video"));
 
-// --- Upload Handler ---
+// --- API Route ---
 export default async function handler(req, res) {
-  setCorsHeaders(res);
+  setCorsHeaders(req, res);
 
-  // Handle preflight
+  // Preflight request
   if (req.method === "OPTIONS") {
     return res.status(204).end();
   }
@@ -102,7 +106,7 @@ export default async function handler(req, res) {
   }
 }
 
-// Disable default body parsing for file uploads
+// Required for multer to handle the file upload
 export const config = {
   api: {
     bodyParser: false,
