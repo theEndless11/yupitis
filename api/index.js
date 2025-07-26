@@ -16,52 +16,59 @@ const setCorsHeaders = (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-User-ID');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
 };
+
+const getUserFromRequest = (req) => {
+  const userIdFromHeader = req.headers['x-user-id'];
+  const userId = req.query?.userId || userIdFromHeader || req.user?.userId;
+  
+  return {
+    userId: userId || null,
+    username: req.query?.username || req.user?.username || null
+  };
+};
+
 const parseBody = (req) => {
   return new Promise((resolve, reject) => {
     if (req.method === 'GET') {
-      resolve({})
-      return
+      resolve({});
+      return;
     }
     
-    let body = ''
+    let body = '';
     req.on('data', chunk => {
-      body += chunk.toString()
-    })
+      body += chunk.toString();
+    });
     req.on('end', () => {
       try {
-        resolve(body ? JSON.parse(body) : {})
+        resolve(body ? JSON.parse(body) : {});
       } catch (error) {
-        reject(error)
+        reject(new Error('Invalid JSON'));
       }
-    })
-  })
-}
+    });
+  });
+};
 
-// Parse query parameters
-const parseQuery = (url) => {
-  const queryString = url.split('?')[1]
-  if (!queryString) return {}
-  
-  const params = {}
-  queryString.split('&').forEach(param => {
-    const [key, value] = param.split('=')
-    params[decodeURIComponent(key)] = decodeURIComponent(value || '')
-  })
-  return params
-}
+const sendResponse = (res, statusCode, data) => {
+  res.statusCode = statusCode;
+  res.setHeader('Content-Type', 'application/json');
+  res.end(JSON.stringify({
+    success: statusCode < 400,
+    ...data
+  }));
+};
+
 module.exports = async (req, res) => {
   setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-  const urlObj = new URL(req.url, `http://${req.headers.host}`);
-  const query = Object.fromEntries(urlObj.searchParams.entries());
+    const urlObj = new URL(req.url, `http://${req.headers.host}`);
+    const query = Object.fromEntries(urlObj.searchParams.entries());
+    const body = await parseBody(req);
+    const user = getUserFromRequest({ ...req, query, body });
+    const { method, url } = req;
 
-  // Parse body and get user context
-  const body = await parseBody(req);
-  const user = getUserFromRequest({ ...req, query, body });
-  const { method, url } = req;
-
+    // GET /api/index - Get groups for user
     if (method === 'GET' && url.startsWith('/api/index')) {
       const userId = query.userId || user.userId;
       if (!userId) return sendResponse(res, 400, { error: 'Missing userId parameter' });
@@ -78,7 +85,12 @@ module.exports = async (req, res) => {
       allGroups.forEach(group => {
         if (memberGroupIds.includes(group.id)) {
           const m = userMemberships.find(m => m.groupId === group.id);
-          joinedGroups.push({ ...group, userRole: m.role, joinedAt: m.joinedAt, isMember: true });
+          joinedGroups.push({ 
+            ...group, 
+            userRole: m.role, 
+            joinedAt: m.joinedAt, 
+            isMember: true 
+          });
         } else {
           const pending = pendingRequests.find(r => r.groupId === group.id);
           availableGroups.push({
@@ -100,10 +112,12 @@ module.exports = async (req, res) => {
       });
     }
 
+    // POST /api/index - Handle group actions
     if (method === 'POST' && url.startsWith('/api/index')) {
       const { action, groupId, userId, username, requestId } = body;
-      if (!action || !groupId || !userId)
-        return res.end(JSON.stringify({ success: false, error: 'Missing action, groupId or userId' }));
+      if (!action || !groupId || !userId) {
+        return sendResponse(res, 400, { error: 'Missing action, groupId or userId' });
+      }
 
       switch (action) {
         case 'join':
@@ -114,13 +128,23 @@ module.exports = async (req, res) => {
               content: `${username || user.username} joined the group`,
               type: 'system'
             });
-            EventBus.publish('member.joined', { userId, groupId, username: username || user.username });
+            EventBus.publish('member.joined', { 
+              userId, 
+              groupId, 
+              username: username || user.username 
+            });
           }
-          return res.end(JSON.stringify({ success: true, membership: join, requiresApproval: join.status === 'pending', requestId: join.requestId }));
+          return sendResponse(res, 200, { 
+            membership: join, 
+            requiresApproval: join.status === 'pending', 
+            requestId: join.requestId 
+          });
 
         case 'leave':
           const membership = await GroupService.getMembership(userId, groupId);
-          if (!membership) return res.end(JSON.stringify({ success: false, error: 'Not a member' }));
+          if (!membership) {
+            return sendResponse(res, 403, { error: 'Not a member of this group' });
+          }
 
           await GroupService.leaveGroup(userId, groupId);
           await MessageService.handleUserLeft(userId, groupId);
@@ -129,42 +153,58 @@ module.exports = async (req, res) => {
             content: `${username || user.username} left the group`,
             type: 'system'
           });
-          EventBus.publish('member.left', { userId, groupId, username: username || user.username });
-          return res.end(JSON.stringify({ success: true }));
+          EventBus.publish('member.left', { 
+            userId, 
+            groupId, 
+            username: username || user.username 
+          });
+          return sendResponse(res, 200, {});
 
         case 'cancelRequest':
-          if (!requestId) return res.end(JSON.stringify({ success: false, error: 'Missing requestId' }));
+          if (!requestId) {
+            return sendResponse(res, 400, { error: 'Missing requestId' });
+          }
           await GroupService.cancelJoinRequest(requestId, userId);
-          return res.end(JSON.stringify({ success: true }));
+          return sendResponse(res, 200, {});
 
         default:
-          return res.end(JSON.stringify({ success: false, error: 'Invalid action' }));
+          return sendResponse(res, 400, { error: 'Invalid action' });
       }
     }
 
+    // GET /groups/:groupId
     if (method === 'GET' && url.match(/^\/groups\/\w+$/)) {
       const groupId = url.split('/')[2];
       const [group, membership] = await Promise.all([
         GroupService.getGroup(groupId),
         GroupService.getMembership(user.userId, groupId)
       ]);
-      return res.end(JSON.stringify({ success: true, group, membership, permissions: GroupService.getPermissions(membership) }));
+      return sendResponse(res, 200, { 
+        group, 
+        membership, 
+        permissions: GroupService.getPermissions(membership) 
+      });
     }
 
+    // GET /groups/:groupId/messages
     if (method === 'GET' && url.match(/^\/groups\/\w+\/messages/)) {
       const groupId = url.split('/')[2];
       const membership = await GroupService.getMembership(user.userId, groupId);
-      if (!membership) return res.end(JSON.stringify({ success: false, error: 'Access denied' }));
+      if (!membership) {
+        return sendResponse(res, 403, { error: 'Access denied' });
+      }
 
-      const { limit, before } = query;
-      const messages = await MessageService.getMessages(groupId, { limit, before });
-      return res.end(JSON.stringify({ success: true, messages }));
+      const messages = await MessageService.getMessages(groupId, query);
+      return sendResponse(res, 200, { messages });
     }
 
+    // POST /groups/:groupId/messages
     if (method === 'POST' && url.match(/^\/groups\/\w+\/messages$/)) {
       const groupId = url.split('/')[2];
       const membership = await GroupService.getMembership(user.userId, groupId);
-      if (!membership || membership.status !== 'active') return res.end(JSON.stringify({ success: false, error: 'Cannot send messages' }));
+      if (!membership || membership.status !== 'active') {
+        return sendResponse(res, 403, { error: 'Cannot send messages' });
+      }
 
       const { content, imageUrl } = body;
       const message = await MessageService.createMessage({
@@ -176,31 +216,37 @@ module.exports = async (req, res) => {
       });
 
       EventBus.publish('message.created', { message, groupId });
-      return res.end(JSON.stringify({ success: true, message }));
+      return sendResponse(res, 200, { message });
     }
 
+    // DELETE /groups/:groupId/messages/:messageId
     if (method === 'DELETE' && url.match(/^\/groups\/\w+\/messages\/\w+$/)) {
       const [, , groupId, , messageId] = url.split('/');
       const membership = await GroupService.getMembership(user.userId, groupId);
-      if (!membership) return res.end(JSON.stringify({ success: false, error: 'Access denied' }));
+      if (!membership) {
+        return sendResponse(res, 403, { error: 'Access denied' });
+      }
 
       const message = await MessageService.getMessage(messageId);
-      if (!message || message.group_id !== groupId) return res.end(JSON.stringify({ success: false, error: 'Message not found' }));
+      if (!message || message.group_id !== groupId) {
+        return sendResponse(res, 404, { error: 'Message not found' });
+      }
 
-      const canDelete = message.user_id === user.userId || ['admin', 'moderator'].includes(membership.role);
-      if (!canDelete) return res.end(JSON.stringify({ success: false, error: 'Insufficient permissions' }));
+      const canDelete = message.user_id === user.userId || 
+                       ['admin', 'moderator'].includes(membership.role);
+      if (!canDelete) {
+        return sendResponse(res, 403, { error: 'Insufficient permissions' });
+      }
 
       await MessageService.deleteMessage(messageId);
       EventBus.publish('message.deleted', { groupId, messageId, deletedBy: user.userId });
-      return res.end(JSON.stringify({ success: true }));
+      return sendResponse(res, 200, {});
     }
 
-    res.statusCode = 404;
-    res.end(JSON.stringify({ success: false, error: 'Route not found' }));
-  } catch (err) {
-    console.error('API Error:', err);
-    res.statusCode = 500;
-    res.end(JSON.stringify({ success: false, error: err.message }));
+    return sendResponse(res, 404, { error: 'Route not found' });
+
+  } catch (error) {
+    return sendResponse(res, 500, { error: error.message });
   }
 };
 
