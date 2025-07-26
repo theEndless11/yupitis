@@ -67,7 +67,7 @@ module.exports = (mysql) => {
            FROM join_requests jr 
            JOIN groups g ON jr.groupId = g.id 
            WHERE jr.userId = ? AND jr.status = 'pending'
-           ORDER BY jr.created_at DESC`,
+           ORDER BY jr.createdAt DESC`,
           [userId]
         );
         return rows || [];
