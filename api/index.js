@@ -16,7 +16,39 @@ const setCorsHeaders = (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-User-ID');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
 };
+const parseBody = (req) => {
+  return new Promise((resolve, reject) => {
+    if (req.method === 'GET') {
+      resolve({})
+      return
+    }
+    
+    let body = ''
+    req.on('data', chunk => {
+      body += chunk.toString()
+    })
+    req.on('end', () => {
+      try {
+        resolve(body ? JSON.parse(body) : {})
+      } catch (error) {
+        reject(error)
+      }
+    })
+  })
+}
 
+// Parse query parameters
+const parseQuery = (url) => {
+  const queryString = url.split('?')[1]
+  if (!queryString) return {}
+  
+  const params = {}
+  queryString.split('&').forEach(param => {
+    const [key, value] = param.split('=')
+    params[decodeURIComponent(key)] = decodeURIComponent(value || '')
+  })
+  return params
+}
 module.exports = async (req, res) => {
   setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
