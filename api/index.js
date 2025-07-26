@@ -184,351 +184,205 @@ module.exports = async (req, res) => {
     }
 
     // POST /api/index - Handle group actions
-    if (method === 'POST' && (urlParts[0] === 'api' && urlParts[1] === 'index')) {
-      const { action, groupId, userId, username, requestId } = body;
-      
-      if (!action || !groupId || !validateUserId(userId)) {
-        return sendResponse(res, 400, { 
-          error: 'Missing required fields: action, groupId, or valid userId' 
-        });
+   if (method === 'POST' && urlParts[0] === 'api' && urlParts[1] === 'index') {
+  const { action, groupId, userId, username, requestId } = body;
+  if (!action || !groupId || !validateUserId(userId)) return sendResponse(res, 400, { error: 'Missing required fields' });
+
+  try {
+    const uname = username || user.username;
+
+    if (action === 'join') {
+      const joinResult = await GroupService.joinGroup(userId, uname, groupId);
+
+      if (joinResult.status === 'active') {
+        const msg = await MessageService.createSystemMessage({ groupId, content: `${uname} joined the group`, type: 'system' });
+        EventBus.publish('member.joined', { userId, groupId, username: uname, member: joinResult, systemMessage: msg });
       }
 
-      try {
-        switch (action) {
-          case 'join':
-            const joinResult = await GroupService.joinGroup(userId, username || user.username, groupId);
-            
-            if (joinResult.status === 'active') {
-              // Create system message for successful join
-              try {
-                const systemMessage = await MessageService.createSystemMessage({
-                  groupId,
-                  content: `${username || user.username || 'User'} joined the group`,
-                  type: 'system'
-                });
-                
-                // Publish member joined event
-                EventBus.publish('member.joined', { 
-                  userId, 
-                  groupId, 
-                  username: username || user.username,
-                  member: joinResult,
-                  systemMessage
-                });
-              } catch (msgError) {
-                console.warn('Failed to create join system message:', msgError);
-              }
-            } else if (joinResult.status === 'pending') {
-              // Publish join request event for admins
-              EventBus.publish('join.requested', {
-                id: joinResult.requestId,
-                userId,
-                username: username || user.username,
-                groupId,
-                requestedAt: new Date().toISOString()
-              });
-            }
-            
-            return sendResponse(res, 200, { 
-              membership: joinResult, 
-              requiresApproval: joinResult.status === 'pending', 
-              requestId: joinResult.requestId 
-            });
-
-          case 'leave':
-            const membership = await GroupService.getMembership(userId, groupId);
-            if (!membership) {
-              return sendResponse(res, 403, { error: 'Not a member of this group' });
-            }
-
-            await GroupService.leaveGroup(userId, groupId);
-            
-            try {
-              // Handle user left in messages
-              await MessageService.handleUserLeft(userId, groupId);
-              
-              // Create system message
-              const systemMessage = await MessageService.createSystemMessage({
-                groupId,
-                content: `${username || user.username || 'User'} left the group`,
-                type: 'system'
-              });
-              
-              // Publish member left event
-              EventBus.publish('member.left', { 
-                userId, 
-                groupId, 
-                username: username || user.username,
-                systemMessage
-              });
-            } catch (msgError) {
-              console.warn('Failed to handle leave messages:', msgError);
-            }
-            
-            return sendResponse(res, 200, { message: 'Successfully left the group' });
-
-          case 'cancelRequest':
-            if (!requestId) {
-              return sendResponse(res, 400, { error: 'Missing requestId for cancel action' });
-            }
-            
-            await GroupService.cancelJoinRequest(requestId, userId);
-            return sendResponse(res, 200, { message: 'Join request cancelled successfully' });
-
-          default:
-            return sendResponse(res, 400, { error: `Invalid action: ${action}` });
-        }
-      } catch (actionError) {
-        console.error(`Error in ${action} action:`, actionError);
-        return sendResponse(res, 500, { 
-          error: `Failed to ${action}: ${actionError.message}`
-        });
-      }
-    }
-
-    // GET /groups/:groupId
-    if (method === 'GET' && urlParts[0] === 'groups' && urlParts[1]) {
-      const groupId = urlParts[1];
-      
-      if (!validateUserId(user.userId)) {
-        return sendResponse(res, 401, { error: 'Authentication required' });
-      }
-
-      try {
-        const [group, membership, members] = await Promise.all([
-          GroupService.getGroup(groupId),
-          GroupService.getMembership(user.userId, groupId),
-          GroupService.getGroupMembers(groupId)
-        ]);
-        
-        if (!group) {
-          return sendResponse(res, 404, { error: 'Group not found' });
-        }
-
-        const permissions = GroupService.getPermissions ? 
-          GroupService.getPermissions(membership) : 
-          {
-            canSendMessages: membership?.status === 'active',
-            canDeleteOwnMessages: membership?.status === 'active',
-            canDeleteAnyMessage: ['admin', 'moderator'].includes(membership?.role),
-            canManageMembers: ['admin', 'moderator'].includes(membership?.role)
-          };
-        
-        return sendResponse(res, 200, { 
-          group, 
-          membership, 
-          permissions,
-          members: members || []
-        });
-      } catch (error) {
-        console.error('Error fetching group:', error);
-        return sendResponse(res, 500, { error: 'Failed to fetch group details' });
-      }
-    }
-
-    // GET /groups/:groupId/messages
-    if (method === 'GET' && urlParts[0] === 'groups' && urlParts[1] && urlParts[2] === 'messages') {
-      const groupId = urlParts[1];
-      
-      if (!validateUserId(user.userId)) {
-        return sendResponse(res, 401, { error: 'Authentication required' });
-      }
-
-      try {
-        const membership = await GroupService.getMembership(user.userId, groupId);
-        if (!membership || membership.status !== 'active') {
-          return sendResponse(res, 403, { error: 'Access denied - not an active member' });
-        }
-
-        const limit = parseInt(query.limit) || 50;
-        const offset = parseInt(query.offset) || 0;
-        
-        const messages = await MessageService.getMessages(groupId, { limit, offset });
-        return sendResponse(res, 200, { messages: messages || [] });
-      } catch (error) {
-        console.error('Error fetching messages:', error);
-        return sendResponse(res, 500, { error: 'Failed to fetch messages' });
-      }
-    }
-
-    // POST /groups/:groupId/messages
-    if (method === 'POST' && urlParts[0] === 'groups' && urlParts[1] && urlParts[2] === 'messages') {
-      const groupId = urlParts[1];
-      
-      if (!validateUserId(user.userId)) {
-        return sendResponse(res, 401, { error: 'Authentication required' });
-      }
-
-      try {
-        const membership = await GroupService.getMembership(user.userId, groupId);
-        if (!membership || membership.status !== 'active') {
-          return sendResponse(res, 403, { error: 'Cannot send messages - not an active member' });
-        }
-
-        const { content, imageUrl } = body;
-        if (!content && !imageUrl) {
-          return sendResponse(res, 400, { error: 'Message content or image required' });
-        }
-
-        const message = await MessageService.createMessage({
+      if (joinResult.status === 'pending') {
+        EventBus.publish('join.requested', {
+          id: joinResult.requestId,
+          userId,
+          username: uname,
           groupId,
-          userId: user.userId,
-          username: membership.username || user.username,
-          content: content || '',
-          imageUrl: imageUrl || null
+          requestedAt: new Date().toISOString()
         });
-
-        // Publish message created event
-        EventBus.publish('message.created', { message, groupId });
-        
-        return sendResponse(res, 200, { message });
-      } catch (error) {
-        console.error('Error creating message:', error);
-        return sendResponse(res, 500, { error: 'Failed to create message' });
       }
+
+      return sendResponse(res, 200, {
+        membership: joinResult,
+        requiresApproval: joinResult.status === 'pending',
+        requestId: joinResult.requestId
+      });
     }
 
-    // DELETE /groups/:groupId/messages/:messageId
-    if (method === 'DELETE' && urlParts[0] === 'groups' && urlParts[1] && urlParts[2] === 'messages' && urlParts[3]) {
-      const groupId = urlParts[1];
-      const messageId = urlParts[3];
-      
-      if (!validateUserId(user.userId)) {
-        return sendResponse(res, 401, { error: 'Authentication required' });
-      }
+    if (action === 'leave') {
+      const member = await GroupService.getMembership(userId, groupId);
+      if (!member) return sendResponse(res, 403, { error: 'Not a member' });
 
-      try {
-        const membership = await GroupService.getMembership(user.userId, groupId);
-        if (!membership || membership.status !== 'active') {
-          return sendResponse(res, 403, { error: 'Access denied - not a member' });
-        }
+      await GroupService.leaveGroup(userId, groupId);
+      const msg = await MessageService.createSystemMessage({ groupId, content: `${uname} left the group`, type: 'system' });
+      await MessageService.handleUserLeft(userId, groupId);
+      EventBus.publish('member.left', { userId, groupId, username: uname, systemMessage: msg });
 
-        const message = await MessageService.getMessage(messageId);
-        if (!message || message.group_id !== groupId) {
-          return sendResponse(res, 404, { error: 'Message not found' });
-        }
-
-        const canDelete = message.user_id === user.userId || 
-                         ['admin', 'moderator'].includes(membership.role);
-        if (!canDelete) {
-          return sendResponse(res, 403, { error: 'Insufficient permissions to delete message' });
-        }
-
-        await MessageService.deleteMessage(messageId);
-        
-        // Publish message deleted event
-        EventBus.publish('message.deleted', { groupId, messageId, deletedBy: user.userId });
-        
-        return sendResponse(res, 200, { message: 'Message deleted successfully' });
-      } catch (error) {
-        console.error('Error deleting message:', error);
-        return sendResponse(res, 500, { error: 'Failed to delete message' });
-      }
+      return sendResponse(res, 200, { message: 'Left group' });
     }
 
-    // GET /groups/:groupId/requests - Get pending join requests (admin only)
-    if (method === 'GET' && urlParts[0] === 'groups' && urlParts[1] && urlParts[2] === 'requests') {
-      const groupId = urlParts[1];
-      
-      if (!validateUserId(user.userId)) {
-        return sendResponse(res, 401, { error: 'Authentication required' });
-      }
-
-      try {
-        const membership = await GroupService.getMembership(user.userId, groupId);
-        if (!membership || !['admin', 'moderator'].includes(membership.role)) {
-          return sendResponse(res, 403, { error: 'Insufficient permissions' });
-        }
-
-        const requests = await GroupService.getGroupJoinRequests(groupId);
-        return sendResponse(res, 200, { requests: requests || [] });
-      } catch (error) {
-        console.error('Error fetching join requests:', error);
-        return sendResponse(res, 500, { error: 'Failed to fetch join requests' });
-      }
+    if (action === 'cancelRequest' && requestId) {
+      await GroupService.cancelJoinRequest(requestId, userId);
+      return sendResponse(res, 200, { message: 'Cancelled join request' });
     }
 
-    // POST /groups/:groupId/requests/:requestId/approve
-    if (method === 'POST' && urlParts[0] === 'groups' && urlParts[1] && 
-        urlParts[2] === 'requests' && urlParts[3] && urlParts[4] === 'approve') {
-      const groupId = urlParts[1];
-      const requestId = urlParts[3];
-      
-      if (!validateUserId(user.userId)) {
-        return sendResponse(res, 401, { error: 'Authentication required' });
-      }
-
-      try {
-        const membership = await GroupService.getMembership(user.userId, groupId);
-        if (!membership || !['admin', 'moderator'].includes(membership.role)) {
-          return sendResponse(res, 403, { error: 'Insufficient permissions' });
-        }
-
-        const result = await GroupService.approveJoinRequest(requestId, user.userId);
-        
-        if (result.newMember) {
-          // Create system message
-          try {
-            const systemMessage = await MessageService.createSystemMessage({
-              groupId,
-              content: `${result.newMember.username} joined the group`,
-              type: 'system'
-            });
-            
-            // Publish member joined event
-            EventBus.publish('member.joined', {
-              userId: result.newMember.user_id,
-              groupId,
-              username: result.newMember.username,
-              member: result.newMember,
-              systemMessage
-            });
-          } catch (msgError) {
-            console.warn('Failed to create approval system message:', msgError);
-          }
-        }
-        
-        return sendResponse(res, 200, { 
-          message: 'Join request approved',
-          newMember: result.newMember 
-        });
-      } catch (error) {
-        console.error('Error approving join request:', error);
-        return sendResponse(res, 500, { error: 'Failed to approve join request' });
-      }
-    }
-
-    // POST /groups/:groupId/requests/:requestId/reject
-    if (method === 'POST' && urlParts[0] === 'groups' && urlParts[1] && 
-        urlParts[2] === 'requests' && urlParts[3] && urlParts[4] === 'reject') {
-      const groupId = urlParts[1];
-      const requestId = urlParts[3];
-      
-      if (!validateUserId(user.userId)) {
-        return sendResponse(res, 401, { error: 'Authentication required' });
-      }
-
-      try {
-        const membership = await GroupService.getMembership(user.userId, groupId);
-        if (!membership || !['admin', 'moderator'].includes(membership.role)) {
-          return sendResponse(res, 403, { error: 'Insufficient permissions' });
-        }
-
-        await GroupService.rejectJoinRequest(requestId, user.userId);
-        return sendResponse(res, 200, { message: 'Join request rejected' });
-      } catch (error) {
-        console.error('Error rejecting join request:', error);
-        return sendResponse(res, 500, { error: 'Failed to reject join request' });
-      }
-    }
-
-    return sendResponse(res, 404, { error: 'Route not found' });
-
-  } catch (error) {
-    console.error('API Error:', error);
-    return sendResponse(res, 500, { 
-      error: 'Internal server error',
-      message: error.message
-    });
+    return sendResponse(res, 400, { error: 'Invalid action or missing requestId' });
+  } catch (e) {
+    return sendResponse(res, 500, { error: `Failed to ${body.action}`, message: e.message });
   }
-};
+}
+
+if (method === 'GET' && urlParts[0] === 'groups' && urlParts[1]) {
+  const groupId = urlParts[1];
+  if (!validateUserId(user.userId)) return sendResponse(res, 401, { error: 'Auth required' });
+
+  try {
+    const [group, membership, members] = await Promise.all([
+      GroupService.getGroup(groupId),
+      GroupService.getMembership(user.userId, groupId),
+      GroupService.getGroupMembers(groupId)
+    ]);
+    if (!group) return sendResponse(res, 404, { error: 'Group not found' });
+
+    const role = membership?.role;
+    const perms = GroupService.getPermissions?.(membership) || {
+      canSendMessages: membership?.status === 'active',
+      canDeleteOwnMessages: membership?.status === 'active',
+      canDeleteAnyMessage: ['admin', 'moderator'].includes(role),
+      canManageMembers: ['admin', 'moderator'].includes(role)
+    };
+
+    return sendResponse(res, 200, { group, membership, permissions: perms, members });
+  } catch {
+    return sendResponse(res, 500, { error: 'Failed to fetch group' });
+  }
+}
+
+if (method === 'GET' && urlParts[0] === 'groups' && urlParts[2] === 'messages') {
+  const groupId = urlParts[1];
+  if (!validateUserId(user.userId)) return sendResponse(res, 401, { error: 'Auth required' });
+
+  try {
+    const membership = await GroupService.getMembership(user.userId, groupId);
+    if (!membership || membership.status !== 'active') return sendResponse(res, 403, { error: 'Not a member' });
+
+    const messages = await MessageService.getMessages(groupId, {
+      limit: parseInt(query.limit) || 50,
+      offset: parseInt(query.offset) || 0
+    });
+
+    return sendResponse(res, 200, { messages });
+  } catch {
+    return sendResponse(res, 500, { error: 'Failed to fetch messages' });
+  }
+}
+
+if (method === 'POST' && urlParts[0] === 'groups' && urlParts[2] === 'messages') {
+  const groupId = urlParts[1];
+  if (!validateUserId(user.userId)) return sendResponse(res, 401, { error: 'Auth required' });
+
+  try {
+    const membership = await GroupService.getMembership(user.userId, groupId);
+    if (!membership || membership.status !== 'active') return sendResponse(res, 403, { error: 'Not a member' });
+
+    const { content, imageUrl } = body;
+    if (!content && !imageUrl) return sendResponse(res, 400, { error: 'Content or image required' });
+
+    const msg = await MessageService.createMessage({
+      groupId,
+      userId: user.userId,
+      username: membership.username || user.username,
+      content: content || '',
+      imageUrl: imageUrl || null
+    });
+
+    EventBus.publish('message.created', { message: msg, groupId });
+    return sendResponse(res, 200, { message: msg });
+  } catch {
+    return sendResponse(res, 500, { error: 'Failed to create message' });
+  }
+}
+
+if (method === 'DELETE' && urlParts[0] === 'groups' && urlParts[2] === 'messages' && urlParts[3]) {
+  const [groupId, messageId] = [urlParts[1], urlParts[3]];
+  if (!validateUserId(user.userId)) return sendResponse(res, 401, { error: 'Auth required' });
+
+  try {
+    const member = await GroupService.getMembership(user.userId, groupId);
+    if (!member || member.status !== 'active') return sendResponse(res, 403, { error: 'Not a member' });
+
+    const msg = await MessageService.getMessage(messageId);
+    if (!msg || msg.group_id !== groupId) return sendResponse(res, 404, { error: 'Message not found' });
+
+    const canDelete = msg.user_id === user.userId || ['admin', 'moderator'].includes(member.role);
+    if (!canDelete) return sendResponse(res, 403, { error: 'No permission' });
+
+    await MessageService.deleteMessage(messageId);
+    EventBus.publish('message.deleted', { groupId, messageId, deletedBy: user.userId });
+    return sendResponse(res, 200, { message: 'Deleted' });
+  } catch {
+    return sendResponse(res, 500, { error: 'Delete failed' });
+  }
+}
+
+if (method === 'GET' && urlParts[0] === 'groups' && urlParts[2] === 'requests') {
+  const groupId = urlParts[1];
+  if (!validateUserId(user.userId)) return sendResponse(res, 401, { error: 'Auth required' });
+
+  try {
+    const member = await GroupService.getMembership(user.userId, groupId);
+    if (!['admin', 'moderator'].includes(member?.role)) return sendResponse(res, 403, { error: 'Forbidden' });
+
+    const requests = await GroupService.getGroupJoinRequests(groupId);
+    return sendResponse(res, 200, { requests });
+  } catch {
+    return sendResponse(res, 500, { error: 'Request fetch failed' });
+  }
+}
+
+if (method === 'POST' && urlParts[0] === 'groups' && urlParts[2] === 'requests' && urlParts[4]) {
+  const [groupId, requestId, action] = [urlParts[1], urlParts[3], urlParts[4]];
+  if (!validateUserId(user.userId)) return sendResponse(res, 401, { error: 'Auth required' });
+
+  try {
+    const member = await GroupService.getMembership(user.userId, groupId);
+    if (!['admin', 'moderator'].includes(member?.role)) return sendResponse(res, 403, { error: 'Forbidden' });
+
+    if (action === 'approve') {
+      const result = await GroupService.approveJoinRequest(requestId, user.userId);
+      if (result.newMember) {
+        const msg = await MessageService.createSystemMessage({
+          groupId,
+          content: `${result.newMember.username} joined the group`,
+          type: 'system'
+        });
+        EventBus.publish('member.joined', {
+          userId: result.newMember.user_id,
+          groupId,
+          username: result.newMember.username,
+          member: result.newMember,
+          systemMessage: msg
+        });
+      }
+      return sendResponse(res, 200, { message: 'Approved', newMember: result.newMember });
+    }
+
+    if (action === 'reject') {
+      await GroupService.rejectJoinRequest(requestId, user.userId);
+      return sendResponse(res, 200, { message: 'Rejected' });
+    }
+
+    return sendResponse(res, 400, { error: 'Invalid action' });
+  } catch {
+    return sendResponse(res, 500, { error: 'Action failed' });
+  }
+}
+
+return sendResponse(res, 404, { error: 'Route not found' });
