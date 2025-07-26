@@ -20,16 +20,14 @@ const setCorsHeaders = (req, res) => {
   res.setHeader('Access-Control-Allow-Credentials', 'true')
 }
 
-// Helper to get user from request
 const getUserFromRequest = (req) => {
-  // Try to get user from headers first (frontend sends X-User-ID)
   const userIdFromHeader = req.headers['x-user-id']
   const userId = req.query?.userId || userIdFromHeader || req.user?.userId
   
-  // For now, return mock user if no user found (you can modify this)
   return {
-    userId: userId || '123',
-    username: req.query?.username || req.user?.username || 'TestUser'
+    userId: userId || null,
+    username: req.query?.username || req.user?.username || null,
+    isAuthenticated: !!userId
   }
 }
 
@@ -49,7 +47,7 @@ const parseBody = (req) => {
       try {
         resolve(body ? JSON.parse(body) : {})
       } catch (error) {
-        reject(error)
+        reject(new Error('Invalid JSON'))
       }
     })
   })
@@ -63,7 +61,9 @@ const parseQuery = (url) => {
   const params = {}
   queryString.split('&').forEach(param => {
     const [key, value] = param.split('=')
-    params[decodeURIComponent(key)] = decodeURIComponent(value || '')
+    if (key) {
+      params[decodeURIComponent(key)] = decodeURIComponent(value || '')
+    }
   })
   return params
 }
