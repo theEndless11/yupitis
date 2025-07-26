@@ -19,7 +19,7 @@ module.exports = (mysql) => {
     // Get all groups
     async getAllGroups() {
       try {
-        const [rows] = await mysql.query('SELECT * FROM groups ORDER BY created_at DESC');
+        const [rows] = await mysql.query('SELECT * FROM groups ORDER BY createdAt DESC');
         return rows || [];
       } catch (error) {
         console.error('Error in getAllGroups:', error);
