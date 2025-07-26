@@ -2,9 +2,9 @@ const mysql = require('../utils/mysql')
 const postgres = require('../utils/postgress')
 
 // Services (injected with db connections)
-const GroupService = require('./services/GroupService')(mysql)
-const MessageService = require('./services/MessageService')(postgres)
-const EventBus = require('./services/EventBus')
+const GroupService = require('../services/GroupService')(mysql)
+const MessageService = require('../services/MessageService')(postgres)
+const EventBus = require('../services/EventBus')
 
 // CORS
 const allowedOrigins = ['https://latestnewsandaffairs.site', 'http://localhost:5173']
