@@ -23,6 +23,7 @@ export default async function handler(req, res) {
     }
     return res.json({ success: true, group: groups[0] });
   }
+
   // Fetch groups the user has joined
   const [joinedGroups] = await mysql.query(
     `SELECT g.* FROM groups g
@@ -30,17 +31,23 @@ export default async function handler(req, res) {
      WHERE m.userId = ? AND m.status = 'active'
      ORDER BY g.createdAt DESC`, [userId]
   );
+
   // Fetch groups available to join
   const [availableGroups] = await mysql.query(
-    `SELECT * FROM groups WHERE id NOT IN (
-       SELECT groupId FROM members WHERE userId = ? AND status = 'active')ORDER BY createdAt DESC`, [userId]
+    `SELECT * FROM groups
+     WHERE id NOT IN (
+       SELECT groupId FROM members WHERE userId = ? AND status = 'active'
+     )
+     ORDER BY createdAt DESC`, [userId]
   );
-     return res.json({
+
+  return res.json({
     success: true,
     joinedGroups,
     availableGroups
   });
 }
+
 }
 
   if (req.method === 'POST') {
