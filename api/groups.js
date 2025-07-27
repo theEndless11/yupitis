@@ -32,7 +32,7 @@ export default async function handler(req, res) {
   );
   // Fetch groups available to join
   const [availableGroups] = await mysql.query(
-    `SELECT * FROM groupsWHERE id NOT IN (
+    `SELECT * FROM groups WHERE id NOT IN (
        SELECT groupId FROM members WHERE userId = ? AND status = 'active')ORDER BY createdAt DESC`, [userId]
   );
 return res.json({success: true, joinedGroups, availableGroups});
