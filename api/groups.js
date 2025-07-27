@@ -53,10 +53,8 @@ export default async function handler(req, res) {
 
     const newGroupId = result.insertId;
     await addMember(newGroupId, userId, 'admin', 'active');
-
-    return res.status(201).json({ id: newGroupId, name });
+    return res.json({ success: true, joinedGroups, availableGroups });
   }
-
   if (req.method === 'PUT') {
     // Update group info
     if (!groupId) return res.status(400).json({ error: 'Group ID required' });
