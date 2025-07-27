@@ -35,7 +35,12 @@ export default async function handler(req, res) {
     `SELECT * FROM groups WHERE id NOT IN (
        SELECT groupId FROM members WHERE userId = ? AND status = 'active')ORDER BY createdAt DESC`, [userId]
   );
-return res.json({ success: true, groupId: newGroupId, message: 'Group created' });
+     return res.json({
+    success: true,
+    joinedGroups,
+    availableGroups
+  });
+}
 }
 
   if (req.method === 'POST') {
