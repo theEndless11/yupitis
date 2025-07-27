@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     }
 
     const [existing] = await mysql.query('SELECT * FROM members WHERE groupId = ? AND userId = ?', [groupId, userId]);
-    if (existing) return res.status(400).json({ error: 'Already a member' });
+    if (existing.length > 0) return res.status(400).json({ error: 'Already a member' });
 
     await mysql.query(
       'INSERT INTO members (groupId, userId, username, avatar, role, status) VALUES (?, ?, ?, ?, ?, ?)',
