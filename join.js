@@ -1,3 +1,4 @@
+//api/join.js//
 import { setCorsHeaders } from '../lib/cors';
 import mysql from '../utils/mysql';
 import { addMember } from './members';
