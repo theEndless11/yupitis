@@ -8,7 +8,7 @@ const pool = new Pool({
   port: 5432,
   max: 100,
   idleTimeoutMillis: 30000,
-  ssl: { rejectUnauthorized: false }, // for cloud hosting
+  ssl: false // 🔴 Fully disable SSL to avoid the error
 });
 
 pool.on('error', (err) => {
@@ -16,4 +16,3 @@ pool.on('error', (err) => {
 });
 
 module.exports = pool;
-
