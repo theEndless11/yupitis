@@ -5,21 +5,34 @@ export default async function handler(req, res) {
   setCorsHeaders(res, req.headers.origin || '*');
 
   const groupId = parseInt(req.query.groupId);
-  const userId = req.headers['x-user-id'];
+  const userId = parseInt(req.headers['x-user-id']); // also ensure this is an integer
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  if (!groupId || isNaN(groupId)) {
+    return res.status(400).json({ error: 'Invalid or missing groupId' });
+  }
+
+  if (!userId || isNaN(userId)) {
+    return res.status(400).json({ error: 'Invalid or missing userId in header (x-user-id)' });
+  }
+
   if (req.method === 'GET') {
-    const { rows } = await postgres.query('SELECT * FROM messages WHERE groupId = $1 ORDER BY timestamp DESC LIMIT 50', [groupId]);
+    const { rows } = await postgres.query(
+      'SELECT * FROM messages WHERE groupId = $1 ORDER BY timestamp DESC LIMIT 50',
+      [groupId]
+    );
     return res.json(rows);
   }
 
   if (req.method === 'POST') {
     const { content, image } = req.body;
-    const username = req.headers['x-username']; // Should be passed in header or token
+    const username = req.headers['x-username'] || 'Anonymous';
     const role = req.headers['x-role'] || 'member';
 
-    if (!content && !image) return res.status(400).json({ error: 'Message content required' });
+    if (!content && !image) {
+      return res.status(400).json({ error: 'Message content required' });
+    }
 
     await postgres.query(
       'INSERT INTO messages (groupId, senderId, senderName, senderRole, content, image, type, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())',
@@ -31,9 +44,19 @@ export default async function handler(req, res) {
 
   if (req.method === 'DELETE') {
     const messageId = parseInt(req.query.messageId);
-    await postgres.query('DELETE FROM messages WHERE id = $1 AND senderId = $2', [messageId, userId]);
+
+    if (!messageId || isNaN(messageId)) {
+      return res.status(400).json({ error: 'Invalid or missing messageId' });
+    }
+
+    await postgres.query(
+      'DELETE FROM messages WHERE id = $1 AND senderId = $2',
+      [messageId, userId]
+    );
+
     return res.json({ message: 'Message deleted' });
   }
 
   return res.status(405).end();
 }
+
