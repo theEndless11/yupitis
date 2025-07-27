@@ -17,9 +17,8 @@ export default async function handler(req, res) {
       // Fetch single group details
       const [groups] = await mysql.query('SELECT * FROM groups WHERE id = ?', [groupId]);
       if (groups.length === 0) return res.status(404).json({ error: 'Group not found' });
-      return res.json(groups[0]);
+       return res.json({ joinedGroups, availableGroups });
     }
-
     // Fetch groups joined by user
     const [joinedGroups] = await mysql.query(
       `SELECT g.* FROM groups g
@@ -36,8 +35,7 @@ export default async function handler(req, res) {
        )
        ORDER BY createdAt DESC`, [userId]
     );
-
-    return res.json({ joinedGroups, availableGroups });
+    return res.status(201).json({ id: newGroupId, name });
   }
 
   if (req.method === 'POST') {
