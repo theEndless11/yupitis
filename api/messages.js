@@ -3,60 +3,43 @@ import postgres from '../utils/postgress';
 
 export default async function handler(req, res) {
   setCorsHeaders(res, req.headers.origin || '*');
-
+  
   const groupId = parseInt(req.query.groupId);
-  const userId = parseInt(req.headers['x-user-id']); // also ensure this is an integer
-
+  const messageId = parseInt(req.query.messageId);
+  const userId = parseInt(req.headers['x-user-id']);
+  const username = req.headers['x-username'] || 'Anonymous';
+  const role = req.headers['x-role'] || 'member';
+  
   if (req.method === 'OPTIONS') return res.status(200).end();
+  if (!groupId || isNaN(groupId)) return res.status(400).json({ error: 'Invalid groupId' });
+  if (!userId || isNaN(userId)) return res.status(400).json({ error: 'Invalid userId' });
 
-  if (!groupId || isNaN(groupId)) {
-    return res.status(400).json({ error: 'Invalid or missing groupId' });
-  }
+  try {
+    switch (req.method) {
+      case 'GET':
+        const { rows } = await postgres.query('SELECT * FROM messages WHERE groupId = $1 ORDER BY timestamp DESC LIMIT 50', [groupId]);
+        return res.json(rows);
 
-  if (!userId || isNaN(userId)) {
-    return res.status(400).json({ error: 'Invalid or missing userId in header (x-user-id)' });
-  }
+      case 'POST':
+        const { content, image, replyTo } = req.body;
+        if (!content && !image) return res.status(400).json({ error: 'Content required' });
+        const { rows: newMessage } = await postgres.query(
+          'INSERT INTO messages (groupId, senderId, senderName, senderRole, content, image, replyTo, type, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) RETURNING *',
+          [groupId, userId, username, role, content, image, replyTo, 'text']
+        );
+        return res.status(201).json(newMessage[0]);
 
-  if (req.method === 'GET') {
-    const { rows } = await postgres.query(
-      'SELECT * FROM messages WHERE groupId = $1 ORDER BY timestamp DESC LIMIT 50',
-      [groupId]
-    );
-    return res.json(rows);
-  }
+      case 'DELETE':
+        if (!messageId || isNaN(messageId)) return res.status(400).json({ error: 'Invalid messageId' });
+        const deleteQuery = role === 'admin' ? 'DELETE FROM messages WHERE id = $1' : 'DELETE FROM messages WHERE id = $1 AND senderId = $2';
+        const deleteParams = role === 'admin' ? [messageId] : [messageId, userId];
+        const { rowCount } = await postgres.query(deleteQuery, deleteParams);
+        return rowCount > 0 ? res.json({ message: 'Deleted' }) : res.status(404).json({ error: 'Not found' });
 
-  if (req.method === 'POST') {
-    const { content, image } = req.body;
-    const username = req.headers['x-username'] || 'Anonymous';
-    const role = req.headers['x-role'] || 'member';
-
-    if (!content && !image) {
-      return res.status(400).json({ error: 'Message content required' });
+      default:
+        return res.status(405).end();
     }
-
-    await postgres.query(
-      'INSERT INTO messages (groupId, senderId, senderName, senderRole, content, image, type, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())',
-      [groupId, userId, username, role, content, image, 'text']
-    );
-
-    return res.status(201).json({ message: 'Message sent' });
+  } catch (error) {
+    return res.status(500).json({ error: 'Server error' });
   }
-
-  if (req.method === 'DELETE') {
-    const messageId = parseInt(req.query.messageId);
-
-    if (!messageId || isNaN(messageId)) {
-      return res.status(400).json({ error: 'Invalid or missing messageId' });
-    }
-
-    await postgres.query(
-      'DELETE FROM messages WHERE id = $1 AND senderId = $2',
-      [messageId, userId]
-    );
-
-    return res.json({ message: 'Message deleted' });
-  }
-
-  return res.status(405).end();
 }
-
