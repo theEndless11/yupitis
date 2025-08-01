@@ -30,8 +30,15 @@ export default async function handler(req, res) {
         return res.status(201).json(newMessage[0]);
 
       case 'DELETE':
+        console.log('DELETE request received');
+        console.log('messageId from query:', req.query.messageId);
+        console.log('messageId parsed:', messageId);
+        console.log('messageId isNaN:', isNaN(messageId));
+        console.log('userId:', userId);
         if (!messageId || isNaN(messageId)) return res.status(400).json({ error: 'Invalid messageId' });
+        console.log('About to execute DELETE query with Id:', messageId);
         const { rowCount } = await postgres.query('DELETE FROM messages WHERE Id = $1', [messageId]);
+        console.log('Delete query executed, rowCount:', rowCount);
         return rowCount > 0 ? res.json({ message: 'Deleted' }) : res.status(404).json({ error: 'Not found' });
 
       default:
