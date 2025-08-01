@@ -29,6 +29,44 @@ export default async function handler(req, res) {
         );
         return res.status(201).json(newMessage[0]);
 
+      case 'PUT':
+        // Edit message functionality
+        if (!messageId || isNaN(messageId)) {
+          return res.status(400).json({ error: 'Invalid messageId for editing' });
+        }
+        
+        const { content: editContent } = req.body;
+        if (!editContent || !editContent.trim()) {
+          return res.status(400).json({ error: 'Content required for editing' });
+        }
+        
+        // First check if the message exists and user has permission to edit
+        const { rows: existingMessage } = await postgres.query(
+          'SELECT * FROM messages WHERE Id = $1 AND groupId = $2',
+          [messageId, groupId]
+        );
+        
+        if (existingMessage.length === 0) {
+          return res.status(404).json({ error: 'Message not found' });
+        }
+        
+        // Check if user is the sender or admin
+        const message = existingMessage[0];
+        const isOwner = message.senderId === userId || message.senderid === userId;
+        const isAdmin = role === 'admin';
+        
+        if (!isOwner && !isAdmin) {
+          return res.status(403).json({ error: 'You can only edit your own messages' });
+        }
+        
+        // Update the message
+        const { rows: updatedMessage } = await postgres.query(
+          'UPDATE messages SET content = $1, edited = true, editedAt = NOW() WHERE Id = $2 AND groupId = $3 RETURNING Id as id, *',
+          [editContent.trim(), messageId, groupId]
+        );
+        
+        return res.json(updatedMessage[0]);
+
       case 'DELETE':
         console.log('DELETE request received');
         console.log('messageId from query:', req.query.messageId);
