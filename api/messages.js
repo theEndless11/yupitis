@@ -31,9 +31,7 @@ export default async function handler(req, res) {
 
       case 'DELETE':
         if (!messageId || isNaN(messageId)) return res.status(400).json({ error: 'Invalid messageId' });
-        const deleteQuery = role === 'admin' ? 'DELETE FROM messages WHERE id = $1' : 'DELETE FROM messages WHERE id = $1 AND senderId = $2';
-        const deleteParams = role === 'admin' ? [messageId] : [messageId, userId];
-        const { rowCount } = await postgres.query(deleteQuery, deleteParams);
+        const { rowCount } = await postgres.query('DELETE FROM messages WHERE id = $1', [messageId]);
         return rowCount > 0 ? res.json({ message: 'Deleted' }) : res.status(404).json({ error: 'Not found' });
 
       default:
