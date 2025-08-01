@@ -17,21 +17,21 @@ export default async function handler(req, res) {
   try {
     switch (req.method) {
       case 'GET':
-        const { rows } = await postgres.query('SELECT * FROM messages WHERE groupId = $1 ORDER BY timestamp DESC LIMIT 50', [groupId]);
+        const { rows } = await postgres.query('SELECT Id as id, * FROM messages WHERE groupId = $1 ORDER BY timestamp DESC LIMIT 50', [groupId]);
         return res.json(rows);
 
       case 'POST':
         const { content, image, replyTo } = req.body;
         if (!content && !image) return res.status(400).json({ error: 'Content required' });
         const { rows: newMessage } = await postgres.query(
-          'INSERT INTO messages (groupId, senderId, senderName, senderRole, content, image, replyTo, type, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) RETURNING *',
+          'INSERT INTO messages (groupId, senderId, senderName, senderRole, content, image, replyTo, type, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) RETURNING Id as id, *',
           [groupId, userId, username, role, content, image, replyTo, 'text']
         );
         return res.status(201).json(newMessage[0]);
 
       case 'DELETE':
         if (!messageId || isNaN(messageId)) return res.status(400).json({ error: 'Invalid messageId' });
-        const { rowCount } = await postgres.query('DELETE FROM messages WHERE id = $1', [messageId]);
+        const { rowCount } = await postgres.query('DELETE FROM messages WHERE Id = $1', [messageId]);
         return rowCount > 0 ? res.json({ message: 'Deleted' }) : res.status(404).json({ error: 'Not found' });
 
       default:
