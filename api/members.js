@@ -13,10 +13,18 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid or missing groupId' });
   }
 
-  if (req.method === 'GET') {
-    const [members] = await mysql.query('SELECT * FROM members WHERE groupId = ?', [groupId]);
-    return res.json(members);
-  }
+ if (req.method === 'GET') {
+  const [members] = await mysql.query(
+    `SELECT 
+       m.*, 
+       u.profile_picture 
+     FROM members m
+     LEFT JOIN users u ON m.userId = u.id
+     WHERE m.groupId = ?`,
+    [groupId]
+  );
+  return res.json(members);
+}
 
   if (req.method === 'POST') {
     const { username, avatar } = req.body;
